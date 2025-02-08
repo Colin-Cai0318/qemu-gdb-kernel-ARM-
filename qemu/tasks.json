@@ -1,0 +1,21 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start QEMU",
+      "type": "shell",
+      "command": "${workspaceFolder}/.vscode/vsStartQemu.sh",
+      "isBackground": true,
+      "problemMatcher": [
+        {
+          "base": "$tsc",  // 借用 TypeScript 编译器的匹配器作为模板
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "qemu正在启动...",
+            "endsPattern": "QEMU 已启动，等待 GDB 连接..."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+cmd_/home/caizhipeng/ArmLinux/customized/main.ko := aarch64-linux-gnu-ld -r -EL  -maarch64elf -T ./scripts/module-common.lds -T ./arch/arm64/kernel/module.lds  --build-id  -o /home/caizhipeng/ArmLinux/customized/main.ko /home/caizhipeng/ArmLinux/customized/main.o /home/caizhipeng/ArmLinux/customized/main.mod.o ;  true
