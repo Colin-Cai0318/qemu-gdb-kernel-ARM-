@@ -4,4 +4,4 @@ tmpfs /tmp tmpfs defaults 0 0
 sysfs /sys sysfs defaults 0 0
 tmpfs /dev tmpfs defaults 0 0
 debugfs /sys/kernel/debug debugfs defaults 0 0
-kmod_mount /mnt 9p trans=virtio 0 0
+customized   /mnt/customized   9p   trans=virtio,version=9p2000.L,posixacl,msize=524288   0  0

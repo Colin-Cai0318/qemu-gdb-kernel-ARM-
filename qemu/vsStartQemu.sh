@@ -18,6 +18,7 @@ if [ -f "./arch/arm64/boot/Image" ]; then
         "qemu-system-aarch64 -m 1024M -smp 4 -cpu cortex-a57 -machine virt \
         -kernel ./arch/arm64/boot/Image \
         -append 'rdinit=/linuxrc nokaslr console=ttyAMA0 loglevel=8' \
+        -virtfs local,path=../../customized,mount_tag=customized,security_model=none,id=customized \
         -serial mon:stdio \
         -s -S \
         -nographic 2>&1 | tee qemu.log"
