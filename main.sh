@@ -1,66 +1,88 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
-echo "======================================"
-echo "==============欢迎使用================"
-echo "请输入你进行的操作的数字："
-echo "0.拉取kernel"
-echo "1.busybox定制文件系统"
-echo "2.编译内核"
-echo "3.启动调试内核"
-echo "======================================"
-echo "======================================"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-read operation
+usage() {
+    cat <<'EOF'
+用法:
+  ./main.sh doctor                 检查依赖和实验产物
+  ./main.sh fetch [版本]           下载/展开内核源码（默认 6.1）
+  ./main.sh rootfs                 构建静态 BusyBox initramfs
+  ./main.sh build                  构建 ARM64 Image 与 vmlinux
+  ./main.sh qemu                   直接启动 QEMU
+  ./main.sh debug                  启动等待 GDB 的 QEMU 并进入 GDB
+  ./main.sh vscode                 准备 VS Code 配置并打开源码
 
-case $operation in
-    0)
-        cd ./kernel
-        echo "======================================"
-        echo "如执行失败请自行配置gitee"
-        echo "来源：https://gitee.com/mirrors/linux_old1"
-        echo "======================================"
-        git clone git@gitee.com:mirrors/linux_old1.git
-        mv linux_old1 sourceCode
-        cd ..
-        ;;
-    1)
-        if [ -f "./busybox/BuildFS.sh" ]; then
-            cd ./busybox
-            ./BuildFS.sh
-            cd ..
-        else
-            echo "BuildFS.sh不存在请检查仓库完整"
-        fi
-        ;;
-    2)
-        if [ -f "./kernel/build.sh" ]; then
-            cd ./kernel
-            ./build.sh
-            cd ..
-        else
-            echo "build.sh不存在请检查仓库完整"
-        fi
-        ;;
-    3)
-        echo "请选择启动调试方式:"
-        echo "1.终端调试"
-        echo "2.VSCode调试"
-        read modem
+常用环境变量:
+  JOBS=8                         并行编译数
+  KERNEL_PROFILE=debug|stability 调试配置档
+  BUILD_IN_TREE_MODULES=1       额外构建全部内核模块
+  GDB_PORT=1234                  GDB 端口
+EOF
+}
 
-        if [ "$modem" == "1" ]; then
-            ./qemu/consoleStartQemu.sh
-        elif [ "$modem" == "2" ]; then
-            sudo mkdir -p ./kernel/sourceCode/.vscode
-            sudo chmod 755 ./kernel/sourceCode/.vscode
-            sudo cp ./qemu/*.json ./kernel/sourceCode/.vscode
-            sudo cp ./qemu/vsStartQemu.sh ./kernel/sourceCode/.vscode
-            code ./kernel/sourceCode
-        else
-            echo "无效输入!!!"
-        fi
-        ;;
-    *)
-        echo "无效输入!!!"
-        ;;
+run_action() {
+    local action="$1"
+    shift || true
+
+    case "$action" in
+        doctor) "$SCRIPT_DIR/scripts/doctor.sh" "$@" ;;
+        fetch) "$SCRIPT_DIR/kernel/fetch.sh" "$@" ;;
+        rootfs) "$SCRIPT_DIR/busybox/BuildFS.sh" "$@" ;;
+        build) "$SCRIPT_DIR/kernel/build.sh" "$@" ;;
+        qemu) "$SCRIPT_DIR/qemu/runQemu.sh" "$@" ;;
+        debug) "$SCRIPT_DIR/qemu/consoleStartQemu.sh" "$@" ;;
+        vscode)
+            kernel_dir="$SCRIPT_DIR/kernel/sourceCode"
+            [[ -f "$kernel_dir/Makefile" ]] || {
+                echo "内核源码不存在，请先运行 ./main.sh fetch" >&2
+                exit 1
+            }
+            mkdir -p "$kernel_dir/.vscode"
+            cp "$SCRIPT_DIR/qemu/launch.json" "$SCRIPT_DIR/qemu/tasks.json" \
+                "$kernel_dir/.vscode/"
+            cp "$SCRIPT_DIR/qemu/runQemu.sh" "$SCRIPT_DIR/qemu/vsStartQemu.sh" \
+                "$kernel_dir/.vscode/"
+            command -v code >/dev/null 2>&1 || {
+                echo "未找到 code 命令" >&2
+                exit 1
+            }
+            code "$kernel_dir"
+            ;;
+        help|-h|--help) usage ;;
+        *)
+            echo "未知操作: $action" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+}
+
+if (($# > 0)); then
+    run_action "$@"
+    exit
+fi
+
+cat <<'EOF'
+======================================
+        ARM64 Linux 内核实验台
+0. 环境自检
+1. 准备 Linux 6.1 源码
+2. 构建 BusyBox rootfs
+3. 编译内核
+4. 启动终端 GDB 调试
+5. 启动 VS Code 调试
+======================================
+EOF
+read -r -p "请选择: " operation
+
+case "$operation" in
+    0) run_action doctor ;;
+    1) run_action fetch ;;
+    2) run_action rootfs ;;
+    3) run_action build ;;
+    4) run_action debug ;;
+    5) run_action vscode ;;
+    *) echo "无效输入" >&2; exit 2 ;;
 esac

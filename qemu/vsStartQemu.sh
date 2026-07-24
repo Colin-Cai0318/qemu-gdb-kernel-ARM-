@@ -1,31 +1,41 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
-if lsof -i :1234 >/dev/null; then
-    echo "qemu已经启动正在杀死qemu"
-    lsof -t -i :1234 | xargs -r kill -9
-fi
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+SESSION_NAME="${QEMU_SESSION:-qemu-session}"
 
-echo "当前路径是: $(pwd)"
-
-if [ -f "./arch/arm64/boot/Image" ]; then
-    echo "qemu正在启动...."
-    if [ ! -f qemu.log ]; then
-        sudo touch qemu.log
-    fi
-    sudo chmod 777 qemu.log
-    > qemu.log
-    tmux new-session -d -s qemu-session \
-        "qemu-system-aarch64 -m 1024M -smp 4 -cpu cortex-a57 -machine virt \
-        -kernel ./arch/arm64/boot/Image \
-        -append 'rdinit=/linuxrc nokaslr console=ttyAMA0 loglevel=8' \
-        -virtfs local,path=../../customized,mount_tag=customized,security_model=none,id=customized \
-        -serial mon:stdio \
-        -s -S \
-        -nographic 2>&1 | tee qemu.log"
-    echo "QEMU 已启动，等待 GDB 连接..."
-    echo "输入 'tmux attach -t qemu-session' 进入 QEMU 终端"
-    sleep 3  # 等待 QEMU 初始化完成
-else
-    echo "Image不存在,请先编译内核"
+if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    echo "tmux 会话 $SESSION_NAME 已存在；不会终止它" >&2
+    echo "查看: tmux attach -t $SESSION_NAME" >&2
+    echo "停止: tmux kill-session -t $SESSION_NAME" >&2
     exit 1
 fi
+
+LOG_FILE="${QEMU_LOG:-$(pwd)/qemu.log}"
+: >"$LOG_FILE"
+
+tmux new-session -d -s "$SESSION_NAME" \
+    "'$SCRIPT_DIR/runQemu.sh' --wait-gdb 2>&1 | tee '$LOG_FILE'"
+
+ready=0
+for _ in $(seq 1 50); do
+    if command -v ss >/dev/null 2>&1 &&
+        ss -ltnH | awk '{print $4}' | grep -Eq "[:.]${GDB_PORT:-1234}$"; then
+        ready=1
+        break
+    fi
+    if ! tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+        echo "QEMU 启动失败，请检查日志: $LOG_FILE" >&2
+        exit 1
+    fi
+    sleep 0.1
+done
+
+if ((ready == 0)); then
+    echo "QEMU 未在预期时间内监听 GDB 端口，请检查: $LOG_FILE" >&2
+    exit 1
+fi
+
+echo "QEMU 已启动，等待 GDB 连接..."
+echo "查看串口: tmux attach -t $SESSION_NAME"
+echo "日志: $LOG_FILE"

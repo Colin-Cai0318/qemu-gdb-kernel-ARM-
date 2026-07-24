@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.sh text eol=lf
+Makefile text eol=lf
+*.config text eol=lf
+*.c text eol=lf
+*.md text eol=lf
+*.json text eol=lf
