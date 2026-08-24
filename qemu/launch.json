@@ -10,7 +10,24 @@
       "MIMode": "gdb",
       "miDebuggerPath": "/usr/bin/gdb-multiarch",
       "miDebuggerServerAddress": "localhost:1234",
-      "preLaunchTask": "Start QEMU"
+      "preLaunchTask": "Start QEMU",
+      "setupCommands": [
+        {
+          "description": "选择 ARM64 架构",
+          "text": "set architecture aarch64",
+          "ignoreFailures": false
+        },
+        {
+          "description": "加载 Linux 内核 GDB 辅助命令",
+          "text": "source ${workspaceFolder}/scripts/gdb/vmlinux-gdb.py",
+          "ignoreFailures": true
+        },
+        {
+          "description": "在 start_kernel 停止",
+          "text": "break start_kernel",
+          "ignoreFailures": false
+        }
+      ]
     }
   ]
 }

@@ -8,7 +8,7 @@
       "isBackground": true,
       "problemMatcher": [
         {
-          "base": "$tsc",  // 借用 TypeScript 编译器的匹配器作为模板
+          "base": "$tsc",
           "background": {
             "activeOnStart": true,
             "beginsPattern": "qemu正在启动...",

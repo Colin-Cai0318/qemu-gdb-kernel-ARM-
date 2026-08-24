@@ -1,0 +1,33 @@
+# Local editor state
+.vscode/
+
+# Downloaded and extracted sources
+busybox/busybox-*.tar.*
+busybox/busybox-*/
+busybox/build/
+busybox/root/
+busybox/root.backup.*/
+kernel/linux-*.tar.*
+kernel/sourceCode/
+kernel/sourceCode.incomplete.*/
+kernel/.extract.*/
+
+# Kernel/module build output
+*.o
+*.ko
+*.mod
+*.mod.c
+*.order
+*.symvers
+*.cmd
+.tmp_versions/
+customized/obj/
+customized/ko/
+
+# Runtime output
+*.log
+qemu.log
+busybox/*-build.pid
+busybox/*-build.status
+kernel/*-build.pid
+kernel/*-build.status
