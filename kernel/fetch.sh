@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-KERNEL_VERSION="${1:-${KERNEL_VERSION:-6.1}}"
+KERNEL_VERSION="${1:-${KERNEL_VERSION:-6.12}}"
 SOURCE_DIR="$SCRIPT_DIR/sourceCode"
 ARCHIVE="$SCRIPT_DIR/linux-$KERNEL_VERSION.tar.xz"
 KERNEL_MAJOR="${KERNEL_VERSION%%.*}"

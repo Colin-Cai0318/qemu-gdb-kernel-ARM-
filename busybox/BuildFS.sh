@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 BUSYBOX_VERSION="${BUSYBOX_VERSION:-1.33.1}"
+BUSYBOX_SHA256="${BUSYBOX_SHA256:-}"
 ARCHIVE="$SCRIPT_DIR/busybox-$BUSYBOX_VERSION.tar.bz2"
 SOURCE_DIR="$SCRIPT_DIR/busybox-$BUSYBOX_VERSION"
 BUILD_DIR="$SCRIPT_DIR/build"
@@ -18,19 +19,28 @@ die() {
 }
 
 download() {
-    local url="$1"
-    local destination="$2"
+    local destination="$1"
+    shift
+    local url
 
-    if command -v curl >/dev/null 2>&1; then
-        curl --fail --location --retry 3 --output "$destination" "$url"
-    elif command -v wget >/dev/null 2>&1; then
-        wget --tries=3 --output-document="$destination" "$url"
-    else
-        die "需要 curl 或 wget 下载 BusyBox"
-    fi
+    for url in "$@"; do
+        echo "下载 BusyBox: $url"
+        if command -v curl >/dev/null 2>&1; then
+            curl --fail --location --retry 2 \
+                --output "$destination" "$url" && return 0
+        elif command -v wget >/dev/null 2>&1; then
+            wget --tries=2 --output-document="$destination" "$url" &&
+                return 0
+        else
+            die "需要 curl 或 wget 下载 BusyBox"
+        fi
+        rm -f -- "$destination"
+    done
+
+    die "所有 BusyBox 下载源均失败"
 }
 
-for command_name in make tar bzip2 "${CROSS_COMPILE}gcc"; do
+for command_name in make tar bzip2 sha256sum "${CROSS_COMPILE}gcc"; do
     command -v "$command_name" >/dev/null 2>&1 ||
         die "缺少命令: $command_name"
 done
@@ -40,12 +50,24 @@ done
 [[ "$JOBS" =~ ^[1-9][0-9]*$ ]] ||
     die "JOBS 必须是正整数"
 
+if [[ "$BUSYBOX_VERSION" == "1.33.1" && -z "$BUSYBOX_SHA256" ]]; then
+    BUSYBOX_SHA256="12cec6bd2b16d8a9446dd16130f2b92982f1819f6e1c5f5887b6db03f5660d28"
+fi
+
 if [[ ! -f "$ARCHIVE" ]]; then
     download \
-        "https://busybox.net/downloads/busybox-$BUSYBOX_VERSION.tar.bz2" \
-        "$ARCHIVE.part"
+        "$ARCHIVE.part" \
+        "https://sources.buildroot.net/busybox/busybox-$BUSYBOX_VERSION.tar.bz2" \
+        "https://busybox.net/downloads/busybox-$BUSYBOX_VERSION.tar.bz2"
     mv -- "$ARCHIVE.part" "$ARCHIVE"
 fi
+
+if [[ -n "$BUSYBOX_SHA256" ]]; then
+    printf '%s  %s\n' "$BUSYBOX_SHA256" "$ARCHIVE" | sha256sum --check -
+else
+    echo "警告: BusyBox $BUSYBOX_VERSION 未配置 SHA-256，仅检查归档结构" >&2
+fi
+tar -tjf "$ARCHIVE" >/dev/null || die "BusyBox 归档损坏: $ARCHIVE"
 
 if [[ ! -f "$SOURCE_DIR/Makefile" ]]; then
     tar -xjf "$ARCHIVE" -C "$SCRIPT_DIR"
