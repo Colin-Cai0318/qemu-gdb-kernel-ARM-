@@ -7,7 +7,7 @@ usage() {
     cat <<'EOF'
 用法:
   ./main.sh doctor                 检查依赖和实验产物
-  ./main.sh fetch [版本]           下载/展开内核源码（默认 6.1）
+  ./main.sh fetch [版本]           下载/展开内核源码（默认 6.12）
   ./main.sh rootfs                 构建静态 BusyBox initramfs
   ./main.sh build                  构建 ARM64 Image 与 vmlinux
   ./main.sh qemu                   直接启动 QEMU
@@ -68,7 +68,7 @@ cat <<'EOF'
 ======================================
         ARM64 Linux 内核实验台
 0. 环境自检
-1. 准备 Linux 6.1 源码
+1. 准备 Linux 6.12 源码
 2. 构建 BusyBox rootfs
 3. 编译内核
 4. 启动终端 GDB 调试

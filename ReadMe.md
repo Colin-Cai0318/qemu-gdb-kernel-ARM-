@@ -4,8 +4,9 @@
 编译内核与 BusyBox initramfs，通过 QEMU `virt` 机器启动，并使用
 `gdb-multiarch` 或 VS Code 调试。
 
-默认学习基线为 Linux 6.1、BusyBox 1.33.1。环境变量可以覆盖版本、并行度和调试
-配置。
+默认学习基线为 Linux 6.12、BusyBox 1.33.1。环境变量可以覆盖版本、并行度和调试
+配置。BusyBox 下载默认先使用 Buildroot 源镜像，再回退到上游站点；1.33.1 归档会
+校验固定的 SHA-256。
 
 ## 环境要求
 
@@ -78,7 +79,7 @@ GDB_PORT=1235 ./main.sh debug
 设置 `BUILD_IN_TREE_MODULES=1` 才会构建 `defconfig` 中的全部模块。第一课建议先用
 `debug` 默认值。
 
-## 第一课实验
+## 分阶段实验
 
 `labs/A01` 提供模块生命周期与失败路径实验：
 
@@ -98,6 +99,17 @@ insmod /mnt/labs/A01/hello_lab.ko fail_init=1
 
 详细步骤见 [`labs/A01/README.md`](labs/A01/README.md)。环境设计与故障恢复说明见
 [`docs/environment.md`](docs/environment.md)。
+
+完成 A01 的证据复核后，`labs/A02` 进入内核线程、等待队列与调度 tracepoint：
+
+```bash
+make -C labs/A02
+./main.sh qemu
+```
+
+详细步骤见 [`labs/A02/README.md`](labs/A02/README.md)。仓库内的
+`.codex/skills/linux-kernel-learning` 定义了后续行动项目、学习报告批阅和实验验收的
+持续工作流。
 
 ## 目录
 

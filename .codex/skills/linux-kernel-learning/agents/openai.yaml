@@ -1,0 +1,7 @@
+interface:
+  display_name: "Linux Kernel Learning"
+  short_description: "持续规划、实践并评审 ARM64 Linux 内核学习"
+  default_prompt: "Use $linux-kernel-learning to review my latest kernel lab evidence and prepare the next theory-plus-practice lesson."
+
+policy:
+  allow_implicit_invocation: true

@@ -2,7 +2,7 @@
 
 ## 设计目标
 
-- 使用固定的 Linux 6.1 与 BusyBox 1.33.1 起步，减少变量。
+- 使用固定的 Linux 6.12 与 BusyBox 1.33.1 起步，减少变量。
 - 默认 `debug` 配置只开启源码调试、符号、ftrace、dynamic debug 和 9P。
 - `stability` 配置额外开启 KASAN、lockdep 等重型检查，供后续稳定性专题使用。
 - QEMU 遇到端口或 tmux 会话冲突时直接报错，不终止未知进程。
