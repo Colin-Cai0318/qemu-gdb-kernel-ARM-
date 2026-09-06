@@ -1,13 +1,18 @@
-KERNELDIR = $(shell pwd)/../kernel/sourceCode
-PWD := $(shell pwd)
-CC  = $(CROSS_COMPILE)gcc
+KDIR ?= ../kernel/sourceCode
+ARCH ?= arm64
+CROSS_COMPILE ?= aarch64-linux-gnu-
 
 obj-m := main.o
 
-modules:
-	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
+all: modules
+
+modules: prepare
+	$(MAKE) -C $(KDIR) M=$(CURDIR) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) modules
+
+prepare:
+	$(MAKE) -C $(KDIR) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) modules_prepare
 
 clean:
-	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c .tmp_versions
+	$(MAKE) -C $(KDIR) M=$(CURDIR) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) clean
 
-.PHONY: modules clean
+.PHONY: all modules prepare clean

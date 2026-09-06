@@ -41,7 +41,7 @@ echo "ARM64 Linux 内核实验环境检查"
 echo "仓库: $REPO_ROOT"
 echo
 
-for command_name in git make tar xz aarch64-linux-gnu-gcc qemu-system-aarch64 gdb-multiarch tmux; do
+for command_name in git make tar xz bzip2 cpio gzip python3 modinfo sha256sum file timeout aarch64-linux-gnu-gcc qemu-system-aarch64 gdb-multiarch tmux; do
     check_command "$command_name"
 done
 check_command cscope no

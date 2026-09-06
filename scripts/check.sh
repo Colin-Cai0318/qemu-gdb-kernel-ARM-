@@ -8,6 +8,9 @@ mapfile -t shell_files < <(
     find "$REPO_ROOT" \
         -path "$REPO_ROOT/kernel/sourceCode" -prune -o \
         -path "$REPO_ROOT/busybox/busybox-*" -prune -o \
+        -path "$REPO_ROOT/busybox/build" -prune -o \
+        -path "$REPO_ROOT/busybox/root*" -prune -o \
+        -path "$REPO_ROOT/artifacts" -prune -o \
         -name '*.sh' -type f -print
 )
 

@@ -57,7 +57,7 @@ make -C "$KERNEL_DIR" "${make_args[@]}" defconfig
     --set-val INITRAMFS_ROOT_GID 0
 make -C "$KERNEL_DIR" "${make_args[@]}" olddefconfig
 
-build_targets=(Image vmlinux)
+build_targets=(Image vmlinux modules_prepare)
 if [[ "$BUILD_IN_TREE_MODULES" == "1" ]]; then
     build_targets+=(modules)
 fi
