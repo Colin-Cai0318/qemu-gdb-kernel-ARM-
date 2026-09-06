@@ -25,6 +25,8 @@ customized/obj/
 customized/ko/
 
 # Runtime output
+artifacts/
+__pycache__/
 *.log
 qemu.log
 busybox/*-build.pid

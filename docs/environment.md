@@ -29,7 +29,9 @@
 KERNEL_PROFILE=debug JOBS="$(nproc)" ./main.sh build
 ```
 
-默认目标是 `Image + vmlinux`。只有在研究某个内核自带模块时才需要：
+默认目标是 `Image + vmlinux + modules_prepare`。最后一项补齐 Linux 6.12 外部模块
+需要的 `scripts/module.lds`。A01、A02 与 customized 的 Makefile 也会先执行此准备步骤。
+只有在研究某个内核自带模块时才需要：
 
 ```bash
 BUILD_IN_TREE_MODULES=1 ./main.sh build
@@ -37,6 +39,8 @@ BUILD_IN_TREE_MODULES=1 ./main.sh build
 
 精简构建会将 `vmlinux.symvers` 复制为外部模块构建所需的 `Module.symvers`；
 这份符号表包含核心内核的导出符号，不需要为了 A01 编译所有无关的内核模块。
+
+`modules_prepare` 本身不生成完整的 `Module.symvers`，所以仍然需要先完成内核构建。
 
 稳定性诊断专题：
 
@@ -62,3 +66,12 @@ tmux kill-session -t qemu-session
 ```
 
 该命令只针对明确命名的实验会话，不会根据端口执行 `kill -9`。
+
+## 调试连接和验收证据
+
+QEMU GDB Stub 默认仅监听 `127.0.0.1`；VM 中的 GDB 和 VS Code Remote SSH 可以直接
+连接。从其他机器调试时使用 SSH 端口转发，参见 [QEMU GDB 文档](https://www.qemu.org/docs/master/system/gdb.html)。
+
+`labs/A02/validate-qemu.sh` 将每次运行的串口日志与构建指纹保存到 `artifacts/A02/run.*`。
+输出 PASS 后超时、缺调度事件、卸载顺序错误或出现内核诊断都算失败。详见
+[A02 验收说明](../labs/A02/README.md)。

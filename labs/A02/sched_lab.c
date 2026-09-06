@@ -18,7 +18,7 @@ static struct task_struct *worker;
 static struct proc_dir_entry *proc_entry;
 
 static unsigned int sleep_ms = 20;
-module_param(sleep_ms, uint, 0644);
+module_param(sleep_ms, uint, 0444);
 MODULE_PARM_DESC(sleep_ms, "Per-event sleep in the worker (0..1000 ms)");
 
 static int a02_worker(void *unused)
@@ -40,12 +40,17 @@ static int a02_worker(void *unused)
 
 		batch = atomic_xchg(&pending, 0);
 		while (batch-- > 0) {
+			/* Unload cancels the remaining batch; it does not drain it. */
+			if (kthread_should_stop())
+				break;
 			atomic64_inc(&handled);
 			pr_info("sched_lab: handle seq=%lld pid=%d comm=%s\n",
 				(long long)atomic64_read(&handled),
 				current->pid, current->comm);
 			if (sleep_ms)
-				msleep_interruptible(min(sleep_ms, 1000U));
+				wait_event_interruptible_timeout(event_wq,
+								 kthread_should_stop(),
+								 msecs_to_jiffies(sleep_ms));
 			cond_resched();
 		}
 	}
@@ -103,18 +108,21 @@ static const struct proc_ops a02_proc_ops = {
 
 static int __init sched_lab_init(void)
 {
-	proc_entry = proc_create(A02_PROC_NAME, 0600, NULL, &a02_proc_ops);
-	if (!proc_entry)
-		return -ENOMEM;
-
+	sleep_ms = min(sleep_ms, 1000U);
 	worker = kthread_run(a02_worker, NULL, "a02_worker");
 	if (IS_ERR(worker)) {
 		int ret = PTR_ERR(worker);
 
 		worker = NULL;
-		proc_remove(proc_entry);
-		proc_entry = NULL;
 		return ret;
+	}
+
+	/* Publish the reader-visible task pointer only after creation succeeds. */
+	proc_entry = proc_create(A02_PROC_NAME, 0600, NULL, &a02_proc_ops);
+	if (!proc_entry) {
+		kthread_stop(worker);
+		worker = NULL;
+		return -ENOMEM;
 	}
 
 	pr_info("sched_lab: loaded producer_pid=%d producer_comm=%s\n",

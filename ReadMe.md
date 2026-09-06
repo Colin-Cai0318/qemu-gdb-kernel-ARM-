@@ -111,6 +111,15 @@ make -C labs/A02
 `.codex/skills/linux-kernel-learning` 定义了后续行动项目、学习报告批阅和实验验收的
 持续工作流。
 
+运行 A02 自动验收（Linux 宿主机）：
+
+```bash
+KDIR="$PWD/kernel/sourceCode" ROOTFS_STAGING="$PWD/busybox/root" ./labs/A02/validate-qemu.sh
+```
+
+构建指纹和串口日志保存在 `artifacts/A02/run.*`。CI 中的反例测试不替代真实 QEMU
+运行；每次修改实验后都应重新执行以上命令。
+
 ## 目录
 
 ```text

@@ -49,7 +49,7 @@ qemu_args=(
     -append "rdinit=/linuxrc nokaslr console=ttyAMA0 loglevel=8"
     -virtfs "local,path=$REPO_ROOT/customized,mount_tag=customized,security_model=none,id=customized"
     -virtfs "local,path=$REPO_ROOT/labs,mount_tag=labs,security_model=none,id=labs,readonly=on"
-    -gdb "tcp::$GDB_PORT"
+    -gdb "tcp:127.0.0.1:$GDB_PORT"
     -nographic
 )
 

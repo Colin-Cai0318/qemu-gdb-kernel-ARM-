@@ -30,7 +30,7 @@ rg -n 'trace_sched_(waking|wakeup|switch)' kernel/sched
 2. 为什么只调用 `wake_up_interruptible()` 不能替代等待条件？
 3. `atomic_xchg(&pending, 0)` 如何避免一次唤醒只处理一个事件时的丢失或重复？
 4. `kthread_stop()` 返回前保证了什么？为什么这关系到模块代码的生命周期？
-5. `msleep_interruptible()` 在这里是合法的，而在硬中断处理函数中通常不合法，依据是什么？
+5. `wait_event_interruptible_timeout()` 在这里可以睡眠，而在硬中断处理函数中通常不合法，依据是什么？
 
 ## 构建
 
@@ -64,6 +64,7 @@ dmesg | grep sched_lab
 mount -t tracefs nodev /sys/kernel/tracing 2>/dev/null || true
 cd /sys/kernel/tracing
 echo 0 > tracing_on
+echo global > trace_clock
 echo > trace
 echo 1 > events/sched/sched_waking/enable
 echo 1 > events/sched/sched_wakeup/enable
@@ -100,7 +101,13 @@ time rmmod sched_lab
 dmesg | grep sched_lab | tail -20
 ```
 
-`sleep_ms` 在模块内部限制为最多 1000 ms，避免无界阻塞。
+`sleep_ms` 在初始化时限制为最多 1000 ms，运行期间只读，proc 与 sysfs 展示相同的
+有效值。线程处理每个事件前检查停止请求，等待中也以停止标志为条件。
+卸载采用取消语义：未处理的 pending/batch 事件可以丢弃；`handled` 表示已经开始处理
+的事件数，并不承诺退出时等于写入次数。
+
+Linux 6.12 的 `kthread_stop()` 会设置 `TIF_NOTIFY_SIGNAL` 并唤醒目标，因此不要把
+`time rmmod` 的耗时预设为 `sleep_ms`。应同时观察停止前后的计数与调用顺序。
 
 ## 验收证据
 
@@ -111,9 +118,10 @@ dmesg | grep sched_lab | tail -20
 - [ ] 卸载日志显示 `worker-stop` 发生在 `unloaded` 前，proc 节点已移除。
 - [ ] tracing 开关被恢复，模块已卸载。
 
-维护者可以把 `validate-init.sh` 与模块一起打包进临时 initramfs，执行无交互 QEMU
-回归。该脚本会验证两个事件、调度 tracepoint、同步卸载与 proc 节点清理，并以
-`A02_RUNTIME_PASS` 作为通过标记。
+`validate-init.sh` 在临时 initramfs 中验证正常 3 个事件、实际目标 PID 的调度链、
+33 个积压事件的取消、5 秒内卸载、空闲卸载、参数上限和 proc/线程清理。
+宿主机 `check-output.py` 再检查原始 trace、3 轮生命周期、计数和内核警告。
+只有客户机证据完整且 QEMU 正常退出才输出 `A02_QEMU_VALIDATION=PASS`；超时总是失败。
 
 仓库提供对应的宿主机入口，参数必须指向同一次 Linux 6.12 ARM64 构建和一个可用的
 BusyBox rootfs staging 目录：
@@ -123,3 +131,16 @@ KDIR=/path/to/kernel/source \
 ROOTFS_STAGING=/path/to/rootfs/staging \
 ./labs/A02/validate-qemu.sh
 ```
+
+每次运行的 `manifest.txt` 和 `qemu.log` 保存在 `artifacts/A02/run.*`，包含源码、模块、
+Image、配置和 BusyBox 哈希。这些本地证据不上传 GitHub。版本字符串相同不代表构建
+相同，复盘时还需对照指纹与启动日志。失败时也保留结果，临时 rootfs 会自动清理。
+
+仅检查验收器本身（包含伪造 PASS、缺事件、错误 PID、超时和版本不匹配反例）：
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+CI 只运行静态检查与反例测试，真实内核运行仍需以上 QEMU 回归。
+源码依据：[Linux 6.12 kthread/wait 文档](https://docs.kernel.org/6.12/driver-api/basics.html)。

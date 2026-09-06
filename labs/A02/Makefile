@@ -15,4 +15,4 @@ prepare:
 		ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) modules_prepare
 
 clean:
-	$(MAKE) -C $(KDIR) M=$(CURDIR) clean
+	$(MAKE) -C $(KDIR) M=$(CURDIR) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) clean
