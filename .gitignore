@@ -5,10 +5,10 @@
 busybox/busybox-*.tar.*
 busybox/busybox-*/
 busybox/build/
-busybox/root/
+/busybox/root
 busybox/root.backup.*/
 kernel/linux-*.tar.*
-kernel/sourceCode/
+/kernel/sourceCode
 kernel/sourceCode.incomplete.*/
 kernel/.extract.*/
 

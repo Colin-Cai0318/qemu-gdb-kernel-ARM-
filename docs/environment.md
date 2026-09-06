@@ -42,6 +42,9 @@ BUILD_IN_TREE_MODULES=1 ./main.sh build
 
 `modules_prepare` 本身不生成完整的 `Module.symvers`，所以仍然需要先完成内核构建。
 
+独立实验检出可以用符号链接复用现有 `kernel/sourceCode` 和 `busybox/root`；这两个
+本地产物路径无论是目录还是链接都会被 Git 忽略。重编内核会修改链接指向的构建树。
+
 稳定性诊断专题：
 
 ```bash
