@@ -2,6 +2,11 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/../scripts/lib/host.sh" ]]; then
+    source "$SCRIPT_DIR/../scripts/lib/host.sh"
+else
+    source "$SCRIPT_DIR/../../../scripts/lib/host.sh"
+fi
 SESSION_NAME="${QEMU_SESSION:-qemu-session}"
 
 if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
@@ -19,8 +24,7 @@ tmux new-session -d -s "$SESSION_NAME" \
 
 ready=0
 for _ in $(seq 1 50); do
-    if command -v ss >/dev/null 2>&1 &&
-        ss -ltnH | awk '{print $4}' | grep -Eq "[:.]${GDB_PORT:-1234}$"; then
+    if kernel_lab_port_in_use "${GDB_PORT:-1234}"; then
         ready=1
         break
     fi

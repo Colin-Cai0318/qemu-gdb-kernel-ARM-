@@ -8,7 +8,7 @@
       "program": "${workspaceFolder}/vmlinux",
       "cwd": "${workspaceFolder}",
       "MIMode": "gdb",
-      "miDebuggerPath": "/usr/bin/gdb-multiarch",
+      "miDebuggerPath": "${env:KERNEL_GDB}",
       "miDebuggerServerAddress": "localhost:1234",
       "preLaunchTask": "Start QEMU",
       "setupCommands": [

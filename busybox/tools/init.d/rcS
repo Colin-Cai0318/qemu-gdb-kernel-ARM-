@@ -7,5 +7,7 @@ mkdir -p /mnt/labs
 /bin/mount -a
 mkdir -p /dev/pts
 mount -t devpts devpts /dev/pts
-echo /sbin/mdev > /proc/sys/kernel/hotplug
+if [ -w /proc/sys/kernel/hotplug ]; then
+    echo /sbin/mdev > /proc/sys/kernel/hotplug
+fi
 mdev -s

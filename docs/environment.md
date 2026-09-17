@@ -11,6 +11,13 @@
 ## 推荐首次部署
 
 ```bash
+./setup.sh --full
+```
+
+或者分步执行：
+
+```bash
+./setup.sh
 ./main.sh doctor
 ./main.sh fetch
 ./main.sh rootfs
@@ -28,6 +35,12 @@
 ```bash
 KERNEL_PROFILE=debug JOBS="$(nproc)" ./main.sh build
 ```
+
+macOS 不需要 `nproc`，直接省略 `JOBS` 或显式设置数字；命令会进入项目 ARM64
+Linux VM。详见 [`macos.md`](macos.md)。
+
+BusyBox 1.33.1 的 `tc` applet 依赖已从新 Linux UAPI 头文件移除的 CBQ 定义；rootfs
+构建会关闭这个实验未使用的 applet，其他默认功能保持不变。
 
 默认目标是 `Image + vmlinux`。只有在研究某个内核自带模块时才需要：
 

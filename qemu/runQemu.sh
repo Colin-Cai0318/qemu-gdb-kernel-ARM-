@@ -11,6 +11,7 @@ else
     REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
     KERNEL_DIR="${KERNEL_DIR:-$REPO_ROOT/kernel/sourceCode}"
 fi
+source "$REPO_ROOT/scripts/lib/host.sh"
 
 IMAGE="$KERNEL_DIR/arch/arm64/boot/Image"
 GDB_PORT="${GDB_PORT:-1234}"
@@ -33,8 +34,7 @@ fi
     exit 1
 }
 
-if command -v ss >/dev/null 2>&1 &&
-    ss -ltnH | awk '{print $4}' | grep -Eq "[:.]${GDB_PORT}$"; then
+if kernel_lab_port_in_use "$GDB_PORT"; then
     echo "GDB 端口 $GDB_PORT 已被占用；不会终止未知进程" >&2
     echo "可检查: ss -ltnp | grep :$GDB_PORT" >&2
     exit 1
@@ -49,9 +49,13 @@ qemu_args=(
     -append "rdinit=/linuxrc nokaslr console=ttyAMA0 loglevel=8"
     -virtfs "local,path=$REPO_ROOT/customized,mount_tag=customized,security_model=none,id=customized"
     -virtfs "local,path=$REPO_ROOT/labs,mount_tag=labs,security_model=none,id=labs,readonly=on"
-    -gdb "tcp::$GDB_PORT"
+    -gdb "tcp:127.0.0.1:$GDB_PORT"
     -nographic
 )
+
+if [[ -n "${QEMU_ACCEL:-}" && "${QEMU_ACCEL}" != "auto" ]]; then
+    qemu_args=(-accel "$QEMU_ACCEL" "${qemu_args[@]}")
+fi
 
 if ((WAIT_GDB == 1)); then
     qemu_args+=(-S)

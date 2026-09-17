@@ -3,9 +3,14 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+source "$REPO_ROOT/scripts/lib/host.sh"
 KERNEL_DIR="${KERNEL_DIR:-$REPO_ROOT/kernel/sourceCode}"
 ROOTFS_DIR="${ROOTFS_DIR:-$REPO_ROOT/busybox/root}"
 GDB_PORT="${GDB_PORT:-1234}"
+MAKE_BIN="${MAKE_BIN:-$(kernel_lab_make_command)}"
+if [[ -z "${CROSS_COMPILE+x}" ]]; then
+    CROSS_COMPILE="$(kernel_lab_default_cross_compile)"
+fi
 
 errors=0
 warnings=0
@@ -41,16 +46,21 @@ echo "ARM64 Linux 内核实验环境检查"
 echo "仓库: $REPO_ROOT"
 echo
 
-for command_name in git make tar xz aarch64-linux-gnu-gcc qemu-system-aarch64 gdb-multiarch tmux; do
+for command_name in git "$MAKE_BIN" tar xz "${CROSS_COMPILE}gcc" qemu-system-aarch64 tmux; do
     check_command "$command_name"
 done
+if gdb_bin="$(kernel_lab_gdb_command 2>/dev/null)"; then
+    ok "GDB: $gdb_bin"
+else
+    fail "缺少支持 ARM64 的 GDB（gdb-multiarch 或 gdb）"
+fi
 check_command cscope no
 check_command rg no
 check_command clangd no
 
 if [[ -f "$KERNEL_DIR/Makefile" ]]; then
     kernel_version="$(
-        make -s -C "$KERNEL_DIR" kernelversion 2>/dev/null || true
+        "$MAKE_BIN" -s -C "$KERNEL_DIR" kernelversion 2>/dev/null || true
     )"
     ok "内核源码完整: ${kernel_version:-版本未知}"
 else
@@ -69,8 +79,7 @@ else
     warn "尚未生成 Image/vmlinux；运行 ./main.sh build"
 fi
 
-if command -v ss >/dev/null 2>&1 &&
-    ss -ltnH | awk '{print $4}' | grep -Eq "[:.]${GDB_PORT}$"; then
+if kernel_lab_port_in_use "$GDB_PORT"; then
     warn "TCP $GDB_PORT 已被占用；现有 QEMU 可能正在运行"
 else
     ok "GDB 端口 $GDB_PORT 可用"

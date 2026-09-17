@@ -1,8 +1,9 @@
 # ARM64 Linux 内核 QEMU + GDB 学习实验台
 
-这个项目提供一个可重复的 ARM64 Linux 内核学习环境：在 x86_64 Ubuntu 主机上交叉
-编译内核与 BusyBox initramfs，通过 QEMU `virt` 机器启动，并使用
-`gdb-multiarch` 或 VS Code 调试。
+这个项目提供一个可重复的 ARM64 Linux 内核学习环境：支持 Ubuntu/Debian Linux
+原生运行，也支持 Apple Silicon macOS。macOS 使用仓库私有的 ARM64 Linux VM，
+内核、BusyBox、QEMU 与 GDB 始终在 Linux 环境中运行，避开 APFS 大小写、旧版
+Bash/Make 和宿主交叉工具链差异。
 
 默认学习基线为 Linux 6.12、BusyBox 1.33.1。环境变量可以覆盖版本、并行度和调试
 配置。BusyBox 下载默认先使用 Buildroot 源镜像，再回退到上游站点；1.33.1 归档会
@@ -10,27 +11,38 @@
 
 ## 环境要求
 
-已验证环境：
+支持范围：
 
-- Ubuntu 22.04
+- Ubuntu 22.04/24.04（x86_64 或 ARM64）
+- Apple Silicon macOS 13 或更高版本
 - QEMU 6.1.1
 - GDB 12.1
 - `aarch64-linux-gnu-gcc` 11.4
 
-Ubuntu 可安装的主要依赖：
+不支持 Intel Mac。
+
+## 傻瓜式部署
 
 ```bash
-sudo apt install \
-  build-essential bc bison flex libssl-dev libelf-dev \
-  gcc-aarch64-linux-gnu gdb-multiarch qemu-system-arm \
-  tmux python3 xz-utils bzip2
+git clone https://github.com/Colin-Cai0318/qemu-gdb-kernel-ARM-.git
+cd qemu-gdb-kernel-ARM-
+./setup.sh --full
+./main.sh debug
 ```
 
-先运行自检，它只读检查环境，不安装软件：
+`--full` 会安装依赖、下载源码、构建 rootfs 和内核。不带 `--full` 时只安装依赖。
+macOS 下载的 Lima、镜像缓存、VM 磁盘、Linux 源码和构建目录全部位于仓库的
+`tools/` 下，不使用 Homebrew，也不会把持久化工具数据写出项目工作区。
+
+macOS 查看 QEMU 串口或进入 Linux VM：
 
 ```bash
-./main.sh doctor
+./main.sh console
+./main.sh shell
+./main.sh stop
 ```
+
+详细设计和故障恢复见 [`docs/macos.md`](docs/macos.md)。
 
 ## 首次部署
 
@@ -51,18 +63,24 @@ cd qemu-gdb-kernel-ARM-
 tmux attach -t qemu-session
 ```
 
+macOS 宿主应使用 `./main.sh console`，因为 tmux 位于项目 Linux VM 内。
+
 脚本遇到 1234 端口或同名 tmux 会话冲突时会报错，不会执行 `kill -9`。
 
 ## 命令入口
 
 ```text
 ./main.sh doctor                 检查依赖与产物
+./main.sh setup [--full]         安装依赖，可选完成完整首次构建
 ./main.sh fetch [版本]           下载/恢复内核源码
 ./main.sh rootfs                 构建静态 BusyBox rootfs
 ./main.sh build                  构建 ARM64 Image 和 vmlinux
 ./main.sh qemu                   不等待 GDB，直接启动
 ./main.sh debug                  终端 GDB 调试
 ./main.sh vscode                 准备 VS Code 配置并打开源码
+./main.sh shell                  macOS: 进入项目 Linux VM
+./main.sh console                macOS: 查看 QEMU 串口
+./main.sh stop                   macOS: 停止项目 Linux VM
 ```
 
 常用覆盖参数：

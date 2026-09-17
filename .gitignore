@@ -1,5 +1,10 @@
 # Local editor state
 .vscode/
+.DS_Store
+
+# Project-local macOS toolchain and VM data
+tools/*
+!tools/README.md
 
 # Downloaded and extracted sources
 busybox/busybox-*.tar.*

@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+source "$REPO_ROOT/scripts/lib/host.sh"
 KERNEL_DIR="${KERNEL_DIR:-$REPO_ROOT/kernel/sourceCode}"
 GDB_PORT="${GDB_PORT:-1234}"
 VMLINUX="$KERNEL_DIR/vmlinux"
@@ -29,4 +30,9 @@ gdb_args+=(
     -ex "break start_kernel"
 )
 
-exec gdb-multiarch "${gdb_args[@]}"
+gdb_bin="$(kernel_lab_gdb_command)" || {
+    echo "未找到 gdb-multiarch 或 gdb" >&2
+    exit 1
+}
+
+exec "$gdb_bin" "${gdb_args[@]}"

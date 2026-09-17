@@ -1,6 +1,10 @@
 KDIR ?= ../../kernel/sourceCode
 ARCH ?= arm64
+ifeq ($(shell uname -m),aarch64)
+CROSS_COMPILE ?=
+else
 CROSS_COMPILE ?= aarch64-linux-gnu-
+endif
 
 obj-m := sched_lab.o
 
