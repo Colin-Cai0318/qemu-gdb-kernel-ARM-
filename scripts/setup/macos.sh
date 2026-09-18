@@ -19,6 +19,14 @@ FULL_SETUP=0
 
 source "$REPO_ROOT/scripts/lib/host.sh"
 
+case "${KERNEL_LAB_DOWNLOAD_MODE:-auto}" in
+    auto|direct|proxy) ;;
+    *)
+        echo "KERNEL_LAB_DOWNLOAD_MODE 仅支持 auto、direct 或 proxy" >&2
+        exit 2
+        ;;
+esac
+
 if [[ "${1:-}" == "--full" ]]; then
     FULL_SETUP=1
     shift
@@ -54,10 +62,17 @@ run_lima() {
     "$LIMACTL" "$@"
 }
 
+run_lima_without_proxy() {
+    env -u ALL_PROXY -u HTTPS_PROXY -u HTTP_PROXY \
+        -u all_proxy -u https_proxy -u http_proxy \
+        HOME="$LOCAL_HOME" TMPDIR="$LOCAL_TMP" LIMA_HOME="$LIMA_HOME_DIR" \
+        "$LIMACTL" "$@"
+}
+
 if [[ ! -x "$LIMACTL" ]]; then
     if [[ ! -f "$LIMA_ARCHIVE" ]]; then
         echo "下载 Lima $LIMA_VERSION 到 tools/cache..."
-        curl --fail --location --retry 3 --output "$LIMA_ARCHIVE.part" "$LIMA_URL"
+        kernel_lab_download "$LIMA_URL" "$LIMA_ARCHIVE.part" 3
         mv -- "$LIMA_ARCHIVE.part" "$LIMA_ARCHIVE"
     fi
 
@@ -90,7 +105,7 @@ fi
 
 if [[ ! -f "$LIMA_HOME_DIR/$INSTANCE_NAME/lima.yaml" ]]; then
     echo "创建 Apple Silicon ARM64 Linux VM..."
-    run_lima start -y \
+    lima_create_args=(start -y \
         --name="$INSTANCE_NAME" \
         --vm-type=vz \
         --arch=aarch64 \
@@ -100,19 +115,65 @@ if [[ ! -f "$LIMA_HOME_DIR/$INSTANCE_NAME/lima.yaml" ]]; then
         --containerd=none \
         --mount="$WORKSPACE_ROOT" \
         --mount-writable \
-        template:ubuntu-24.04
+        template:ubuntu-24.04)
+    case "${KERNEL_LAB_DOWNLOAD_MODE:-auto}" in
+        direct)
+            run_lima_without_proxy "${lima_create_args[@]}"
+            ;;
+        proxy)
+            run_lima "${lima_create_args[@]}"
+            ;;
+        auto)
+            if ! run_lima_without_proxy "${lima_create_args[@]}"; then
+                echo "VM 镜像直连下载失败，自动回退到系统代理..." >&2
+                if [[ -f "$LIMA_HOME_DIR/$INSTANCE_NAME/lima.yaml" ]]; then
+                    run_lima start -y "$INSTANCE_NAME"
+                else
+                    run_lima "${lima_create_args[@]}"
+                fi
+            fi
+            ;;
+        *)
+            echo "KERNEL_LAB_DOWNLOAD_MODE 仅支持 auto、direct 或 proxy" >&2
+            exit 2
+            ;;
+    esac
 else
     echo "启动已有 Linux VM..."
     run_lima start -y "$INSTANCE_NAME"
 fi
 
 echo "在 Linux VM 中安装内核实验依赖..."
-run_lima shell "$INSTANCE_NAME" -- bash -lc '
+run_lima shell "$INSTANCE_NAME" -- \
+    env "KERNEL_LAB_DOWNLOAD_MODE=${KERNEL_LAB_DOWNLOAD_MODE:-auto}" bash -lc '
 set -Eeuo pipefail
 marker="$HOME/.kernel-lab-provision-v2"
+apt_download() {
+    case "${KERNEL_LAB_DOWNLOAD_MODE:-auto}" in
+        direct)
+            env -u ALL_PROXY -u HTTPS_PROXY -u HTTP_PROXY \
+                -u all_proxy -u https_proxy -u http_proxy "$@"
+            ;;
+        proxy)
+            "$@"
+            ;;
+        auto)
+            if env -u ALL_PROXY -u HTTPS_PROXY -u HTTP_PROXY \
+                -u all_proxy -u https_proxy -u http_proxy "$@"; then
+                return 0
+            fi
+            echo "APT 直连失败，自动回退到系统代理..." >&2
+            "$@"
+            ;;
+        *)
+            echo "无效的 KERNEL_LAB_DOWNLOAD_MODE" >&2
+            return 2
+            ;;
+    esac
+}
 if [[ ! -f "$marker" ]]; then
     for attempt in 1 2 3; do
-        if sudo apt-get -o Acquire::Retries=3 update; then
+        if apt_download sudo apt-get -o Acquire::Retries=3 update; then
             break
         fi
         if ((attempt == 3)); then
@@ -123,7 +184,7 @@ if [[ ! -f "$marker" ]]; then
         sleep 2
     done
     for attempt in 1 2 3; do
-        if sudo env DEBIAN_FRONTEND=noninteractive apt-get \
+        if apt_download sudo env DEBIAN_FRONTEND=noninteractive apt-get \
             -o Acquire::Retries=3 install -y \
             --no-install-recommends \
             build-essential bc bison flex libssl-dev libelf-dev pkg-config \

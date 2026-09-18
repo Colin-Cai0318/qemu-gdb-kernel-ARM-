@@ -59,6 +59,17 @@ KERNEL_LAB_VM_DISK=100 \
 
 内存和磁盘覆盖值的单位均为 GiB。
 
+下载默认使用 `auto` 模式：先直连并保留断点，直连失败后自动回退到 macOS 的系统
+代理。通常无需配置；如网络环境有明确要求，可覆盖：
+
+```bash
+KERNEL_LAB_DOWNLOAD_MODE=direct ./setup.sh
+KERNEL_LAB_DOWNLOAD_MODE=proxy ./setup.sh
+```
+
+该设置也会传递给 VM 内的 Linux、BusyBox 和依赖下载。所有归档和 VM 镜像仍只保存在
+项目 `tools/` 或其 VM 虚拟磁盘中。
+
 ## 日常命令
 
 ```bash

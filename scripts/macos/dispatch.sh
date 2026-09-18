@@ -31,7 +31,8 @@ run_lima() {
 
 env_args=(env "QEMU_ACCEL=${QEMU_ACCEL:-tcg,thread=multi}")
 for variable_name in JOBS KERNEL_PROFILE BUILD_IN_TREE_MODULES GDB_PORT \
-    KERNEL_VERSION BUSYBOX_VERSION CLEAN_BUILD FORCE_FETCH QEMU_SESSION; do
+    KERNEL_VERSION BUSYBOX_VERSION CLEAN_BUILD FORCE_FETCH QEMU_SESSION \
+    KERNEL_LAB_DOWNLOAD_MODE; do
     if variable_value="$(printenv "$variable_name" 2>/dev/null)"; then
         env_args+=("$variable_name=$variable_value")
     fi

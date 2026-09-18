@@ -33,6 +33,8 @@ cd qemu-gdb-kernel-ARM-
 `--full` 会安装依赖、下载源码、构建 rootfs 和内核。不带 `--full` 时只安装依赖。
 macOS 下载的 Lima、镜像缓存、VM 磁盘、Linux 源码和构建目录全部位于仓库的
 `tools/` 下，不使用 Homebrew，也不会把持久化工具数据写出项目工作区。
+下载默认是 `auto`：先直连并断点续传，失败后自动回退到系统代理。通常无需
+手工配置；特殊网络可设置 `KERNEL_LAB_DOWNLOAD_MODE=direct|proxy`。
 
 macOS 查看 QEMU 串口或进入 Linux VM：
 
@@ -92,6 +94,7 @@ JOBS=8 ./main.sh build
 KERNEL_PROFILE=stability ./main.sh build
 BUILD_IN_TREE_MODULES=1 ./main.sh build
 GDB_PORT=1235 ./main.sh debug
+KERNEL_LAB_DOWNLOAD_MODE=direct ./setup.sh --full
 ```
 
 默认 `debug` 档适合源码学习；`stability` 档额外启用 KASAN、lockdep、

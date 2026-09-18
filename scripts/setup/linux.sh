@@ -28,6 +28,30 @@ else
     exit 1
 fi
 
+apt_download() {
+    case "${KERNEL_LAB_DOWNLOAD_MODE:-auto}" in
+        direct)
+            env -u ALL_PROXY -u HTTPS_PROXY -u HTTP_PROXY \
+                -u all_proxy -u https_proxy -u http_proxy "$@"
+            ;;
+        proxy)
+            "$@"
+            ;;
+        auto)
+            if env -u ALL_PROXY -u HTTPS_PROXY -u HTTP_PROXY \
+                -u all_proxy -u https_proxy -u http_proxy "$@"; then
+                return 0
+            fi
+            echo "APT 直连失败，自动回退到系统代理..." >&2
+            "$@"
+            ;;
+        *)
+            echo "KERNEL_LAB_DOWNLOAD_MODE 仅支持 auto、direct 或 proxy" >&2
+            return 2
+            ;;
+    esac
+}
+
 packages=(
     build-essential bc bison flex libssl-dev libelf-dev pkg-config
     qemu-system-arm ipxe-qemu tmux python3 xz-utils bzip2 cpio gzip file kmod
@@ -48,7 +72,7 @@ esac
 
 echo "安装 Ubuntu/Debian 实验依赖..."
 for attempt in 1 2 3; do
-    if "${sudo_command[@]}" apt-get -o Acquire::Retries=3 update; then
+    if apt_download "${sudo_command[@]}" apt-get -o Acquire::Retries=3 update; then
         break
     fi
     if ((attempt == 3)); then
@@ -59,7 +83,7 @@ for attempt in 1 2 3; do
     sleep 2
 done
 for attempt in 1 2 3; do
-    if "${sudo_command[@]}" env DEBIAN_FRONTEND=noninteractive \
+    if apt_download "${sudo_command[@]}" env DEBIAN_FRONTEND=noninteractive \
         apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
         "${packages[@]}"; then
         break

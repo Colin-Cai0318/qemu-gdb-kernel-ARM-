@@ -24,6 +24,7 @@ usage() {
   KERNEL_PROFILE=debug|stability 调试配置档
   BUILD_IN_TREE_MODULES=1       额外构建全部内核模块
   GDB_PORT=1234                  GDB 端口
+  KERNEL_LAB_DOWNLOAD_MODE=auto  下载模式: auto|direct|proxy
 EOF
 }
 

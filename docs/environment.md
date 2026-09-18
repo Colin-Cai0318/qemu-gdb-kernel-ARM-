@@ -1,5 +1,15 @@
 # ARM64 内核学习实验台说明
 
+## 下载模式
+
+部署和源码下载默认使用 `KERNEL_LAB_DOWNLOAD_MODE=auto`：先直连并断点续传，失败后
+自动回退到系统代理。Linux 与 Apple Silicon macOS 都支持以下覆盖：
+
+```bash
+KERNEL_LAB_DOWNLOAD_MODE=direct ./setup.sh
+KERNEL_LAB_DOWNLOAD_MODE=proxy ./setup.sh
+```
+
 ## 设计目标
 
 - 使用固定的 Linux 6.12 与 BusyBox 1.33.1 起步，减少变量。

@@ -31,15 +31,7 @@ download() {
 
     for url in "$@"; do
         echo "下载 BusyBox: $url"
-        if command -v curl >/dev/null 2>&1; then
-            curl --fail --location --retry 2 \
-                --output "$destination" "$url" && return 0
-        elif command -v wget >/dev/null 2>&1; then
-            wget --tries=2 --output-document="$destination" "$url" &&
-                return 0
-        else
-            die "需要 curl 或 wget 下载 BusyBox"
-        fi
+        kernel_lab_download "$url" "$destination" 2 && return 0
         rm -f -- "$destination"
     done
 

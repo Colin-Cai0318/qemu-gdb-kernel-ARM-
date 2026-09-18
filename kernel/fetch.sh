@@ -20,14 +20,8 @@ die() {
 download() {
     local url="$1"
     local destination="$2"
-
-    if command -v curl >/dev/null 2>&1; then
-        curl --fail --location --retry 3 --output "$destination" "$url"
-    elif command -v wget >/dev/null 2>&1; then
-        wget --tries=3 --output-document="$destination" "$url"
-    else
-        die "需要 curl 或 wget 下载内核源码"
-    fi
+    kernel_lab_download "$url" "$destination" 3 ||
+        die "内核源码下载失败: $url"
 }
 
 [[ "$KERNEL_VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] ||

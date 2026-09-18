@@ -80,3 +80,50 @@ kernel_lab_require_case_sensitive_dir() {
     fi
     rm -f -- "$lower"
 }
+
+kernel_lab_download_once() {
+    local mode="$1"
+    local url="$2"
+    local destination="$3"
+    local retries="${4:-3}"
+    local curl_args
+    local wget_args
+
+    if command -v curl >/dev/null 2>&1; then
+        curl_args=(--fail --location --retry "$retries" --connect-timeout 15)
+        [[ -s "$destination" ]] && curl_args+=(--continue-at -)
+        [[ "$mode" == "direct" ]] && curl_args+=(--noproxy '*')
+        curl "${curl_args[@]}" --output "$destination" "$url"
+    elif command -v wget >/dev/null 2>&1; then
+        wget_args=(--tries="$retries" --continue)
+        [[ "$mode" == "direct" ]] && wget_args+=(--no-proxy)
+        wget "${wget_args[@]}" --output-document="$destination" "$url"
+    else
+        echo "需要 curl 或 wget 下载文件" >&2
+        return 1
+    fi
+}
+
+kernel_lab_download() {
+    local url="$1"
+    local destination="$2"
+    local retries="${3:-3}"
+    local mode="${KERNEL_LAB_DOWNLOAD_MODE:-auto}"
+
+    case "$mode" in
+        direct|proxy)
+            kernel_lab_download_once "$mode" "$url" "$destination" "$retries"
+            ;;
+        auto)
+            if kernel_lab_download_once direct "$url" "$destination" "$retries"; then
+                return 0
+            fi
+            echo "直连下载失败，自动回退到系统代理: $url" >&2
+            kernel_lab_download_once proxy "$url" "$destination" "$retries"
+            ;;
+        *)
+            echo "KERNEL_LAB_DOWNLOAD_MODE 仅支持 auto、direct 或 proxy" >&2
+            return 2
+            ;;
+    esac
+}
