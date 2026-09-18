@@ -8,7 +8,7 @@
       "program": "${workspaceFolder}/vmlinux",
       "cwd": "${workspaceFolder}",
       "MIMode": "gdb",
-      "miDebuggerPath": "${env:KERNEL_GDB}",
+      "miDebuggerPath": "__KERNEL_GDB__",
       "miDebuggerServerAddress": "localhost:1234",
       "preLaunchTask": "Start QEMU",
       "setupCommands": [

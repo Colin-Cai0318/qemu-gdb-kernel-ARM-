@@ -48,26 +48,37 @@ run_action() {
         qemu) "$SCRIPT_DIR/qemu/runQemu.sh" "$@" ;;
         debug) "$SCRIPT_DIR/qemu/consoleStartQemu.sh" "$@" ;;
         vscode)
-            kernel_dir="$SCRIPT_DIR/kernel/sourceCode"
+            kernel_dir="${KERNEL_DIR:-$SCRIPT_DIR/kernel/sourceCode}"
+            workspace_dir="${KERNEL_LOGICAL_DIR:-$kernel_dir}"
             [[ -f "$kernel_dir/Makefile" ]] || {
                 echo "内核源码不存在，请先运行 ./main.sh fetch" >&2
                 exit 1
             }
             mkdir -p "$kernel_dir/.vscode"
-            cp "$SCRIPT_DIR/qemu/launch.json" "$SCRIPT_DIR/qemu/tasks.json" \
-                "$kernel_dir/.vscode/"
-            cp "$SCRIPT_DIR/qemu/runQemu.sh" "$SCRIPT_DIR/qemu/vsStartQemu.sh" \
-                "$kernel_dir/.vscode/"
             gdb_bin="$(kernel_lab_gdb_command)" || {
                 echo "未找到支持 ARM64 的 GDB" >&2
                 exit 1
             }
+            sed "s|__KERNEL_GDB__|$gdb_bin|g" \
+                "$SCRIPT_DIR/qemu/launch.json" >"$kernel_dir/.vscode/launch.json"
+            cp "$SCRIPT_DIR/qemu/tasks.json" "$kernel_dir/.vscode/"
+            cp "$SCRIPT_DIR/qemu/runQemu.sh" "$SCRIPT_DIR/qemu/vsStartQemu.sh" \
+                "$kernel_dir/.vscode/"
+            printf '%s\n' "$SCRIPT_DIR" > \
+                "$kernel_dir/.vscode/kernel-lab-repo-root"
+            if [[ "${VSCODE_PREPARE_ONLY:-0}" == "1" ]]; then
+                echo "VS Code 配置已准备: $workspace_dir"
+                return
+            fi
             command -v code >/dev/null 2>&1 || {
+                if [[ "${KERNEL_LAB_GUEST:-0}" == "1" ]]; then
+                    echo "请输入 exit 返回 macOS，再运行 ./main.sh vscode" >&2
+                    exit 2
+                fi
                 echo "未找到 code 命令" >&2
                 exit 1
             }
-            export KERNEL_GDB="$gdb_bin"
-            code "$kernel_dir"
+            code "$workspace_dir"
             ;;
         shell|console|stop)
             echo "$action 仅用于 macOS 宿主" >&2

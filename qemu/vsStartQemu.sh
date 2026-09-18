@@ -2,7 +2,10 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-if [[ -f "$SCRIPT_DIR/../scripts/lib/host.sh" ]]; then
+if [[ -f "$SCRIPT_DIR/kernel-lab-repo-root" ]]; then
+    IFS= read -r KERNEL_LAB_REPO_ROOT <"$SCRIPT_DIR/kernel-lab-repo-root"
+    source "$KERNEL_LAB_REPO_ROOT/scripts/lib/host.sh"
+elif [[ -f "$SCRIPT_DIR/../scripts/lib/host.sh" ]]; then
     source "$SCRIPT_DIR/../scripts/lib/host.sh"
 else
     source "$SCRIPT_DIR/../../../scripts/lib/host.sh"
@@ -19,6 +22,7 @@ fi
 LOG_FILE="${QEMU_LOG:-$(pwd)/qemu.log}"
 : >"$LOG_FILE"
 
+echo "qemu正在启动..."
 tmux new-session -d -s "$SESSION_NAME" \
     "'$SCRIPT_DIR/runQemu.sh' --wait-gdb 2>&1 | tee '$LOG_FILE'"
 

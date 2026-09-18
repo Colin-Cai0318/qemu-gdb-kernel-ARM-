@@ -64,6 +64,8 @@ tmux attach -t qemu-session
 ```
 
 macOS 宿主应使用 `./main.sh console`，因为 tmux 位于项目 Linux VM 内。
+`./main.sh vscode` 也应从 macOS 终端运行；`./main.sh shell` 进入的 VM 终端用于
+`fetch`、`rootfs`、`build` 和实验命令。
 
 脚本遇到 1234 端口或同名 tmux 会话冲突时会报错，不会执行 `kill -9`。
 

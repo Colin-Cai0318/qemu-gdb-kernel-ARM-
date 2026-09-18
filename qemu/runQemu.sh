@@ -6,7 +6,11 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "$SCRIPT_DIR/../Makefile" && -d "$SCRIPT_DIR/../arch/arm64" ]]; then
     # Copied into kernel/sourceCode/.vscode by ./main.sh vscode.
     KERNEL_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
-    REPO_ROOT="$(cd -- "$KERNEL_DIR/../.." && pwd)"
+    if [[ -f "$SCRIPT_DIR/kernel-lab-repo-root" ]]; then
+        IFS= read -r REPO_ROOT <"$SCRIPT_DIR/kernel-lab-repo-root"
+    else
+        REPO_ROOT="$(cd -- "$KERNEL_DIR/../.." && pwd)"
+    fi
 else
     REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
     KERNEL_DIR="${KERNEL_DIR:-$REPO_ROOT/kernel/sourceCode}"

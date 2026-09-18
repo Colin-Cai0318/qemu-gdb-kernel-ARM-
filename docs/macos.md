@@ -28,6 +28,10 @@ VM 内的 Linux 源码、BusyBox 构建目录和 rootfs 位于虚拟磁盘中的
 `$HOME/kernel-lab-data`。虚拟磁盘本身仍在 `tools/lima-home/`，因此不会在
 `/Users/caizhipeng/workspace` 外留下持久化工具或构建数据。
 
+为兼容原有 Linux 工作流，VM 内会自动建立 `kernel/sourceCode` 逻辑链接，指向
+虚拟磁盘中的真实源码目录。实验 Makefile 仍可使用原来的相对路径；强制重新拉取时
+操作的仍是真实目录，不会把源码错误地展开到 macOS APFS。
+
 ## 一键部署
 
 ```bash
@@ -70,6 +74,10 @@ KERNEL_LAB_VM_DISK=100 \
 `(kernel-lab VM)` 开头。在该终端中继续运行 `./main.sh fetch`、`rootfs` 或 `build`
 时，源码和构建产物仍会写入 VM 的大小写敏感虚拟磁盘，而不是 macOS 挂载目录。
 
+`./main.sh vscode` 应在 macOS 终端执行。它使用项目 `tools/` 内隔离的 VS Code
+配置和 Remote SSH 扩展，打开 VM 虚拟磁盘中的源码；在 VM Shell 内执行时会提示先
+`exit` 返回 macOS。
+
 `JOBS`、`KERNEL_PROFILE`、`BUILD_IN_TREE_MODULES`、`GDB_PORT` 等原有环境变量会被
 传入 VM。例如：
 
@@ -77,8 +85,7 @@ KERNEL_LAB_VM_DISK=100 \
 JOBS=6 KERNEL_PROFILE=stability ./main.sh build
 ```
 
-macOS 当前支持终端 GDB 调试；VS Code 本地 MI 调试没有跨 VM 自动配置，调用
-`./main.sh vscode` 会给出明确提示。
+macOS 同时支持终端 GDB 和 VS Code Remote SSH 调试。
 
 ## 故障恢复
 
