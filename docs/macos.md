@@ -66,6 +66,10 @@ KERNEL_LAB_VM_DISK=100 \
 ./main.sh stop
 ```
 
+`./main.sh shell` 会进入带项目环境变量的 Ubuntu 交互终端，提示符以
+`(kernel-lab VM)` 开头。在该终端中继续运行 `./main.sh fetch`、`rootfs` 或 `build`
+时，源码和构建产物仍会写入 VM 的大小写敏感虚拟磁盘，而不是 macOS 挂载目录。
+
 `JOBS`、`KERNEL_PROFILE`、`BUILD_IN_TREE_MODULES`、`GDB_PORT` 等原有环境变量会被
 传入 VM。例如：
 

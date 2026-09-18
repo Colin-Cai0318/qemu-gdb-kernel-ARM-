@@ -28,13 +28,36 @@ run_lima() {
     "$LIMACTL" "$@"
 }
 
+env_args=(env "QEMU_ACCEL=${QEMU_ACCEL:-tcg,thread=multi}")
+for variable_name in JOBS KERNEL_PROFILE BUILD_IN_TREE_MODULES GDB_PORT \
+    KERNEL_VERSION BUSYBOX_VERSION CLEAN_BUILD FORCE_FETCH QEMU_SESSION; do
+    if variable_value="$(printenv "$variable_name" 2>/dev/null)"; then
+        env_args+=("$variable_name=$variable_value")
+    fi
+done
+
 action="${1:-shell}"
 case "$action" in
     shell)
         run_lima start -y "$INSTANCE_NAME" >/dev/null
         exec env HOME="$LOCAL_HOME" TMPDIR="$LOCAL_TMP" \
             LIMA_HOME="$LIMA_HOME_DIR" \
-            "$LIMACTL" shell "$INSTANCE_NAME"
+            "$LIMACTL" shell "$INSTANCE_NAME" -- \
+            "${env_args[@]}" bash -lc '
+repo_root="$1"
+data_root="$HOME/kernel-lab-data"
+export KERNEL_LAB_GUEST=1
+export KERNEL_DIR="$data_root/kernel/sourceCode"
+export KERNEL_CACHE_DIR="$data_root/cache"
+export BUSYBOX_WORK_DIR="$data_root/busybox"
+export ROOTFS_DIR="$data_root/busybox/root"
+export CROSS_COMPILE=""
+cd "$repo_root"
+printf "已进入 Ubuntu ARM64 项目 VM（输入 exit 返回 macOS）\n"
+printf "项目目录: %s\n内核目录: %s\n" "$repo_root" "$KERNEL_DIR"
+export PS1="(kernel-lab VM) \W\$ "
+exec bash --noprofile --norc -i
+' kernel-lab "$REPO_ROOT"
         ;;
     stop)
         exec env HOME="$LOCAL_HOME" TMPDIR="$LOCAL_TMP" \
@@ -55,14 +78,6 @@ esac
 
 run_lima start -y "$INSTANCE_NAME" >/dev/null
 echo "macOS -> ARM64 Linux VM: $*"
-
-env_args=(env "QEMU_ACCEL=${QEMU_ACCEL:-tcg,thread=multi}")
-for variable_name in JOBS KERNEL_PROFILE BUILD_IN_TREE_MODULES GDB_PORT \
-    KERNEL_VERSION BUSYBOX_VERSION CLEAN_BUILD FORCE_FETCH QEMU_SESSION; do
-    if variable_value="$(printenv "$variable_name" 2>/dev/null)"; then
-        env_args+=("$variable_name=$variable_value")
-    fi
-done
 
 guest_command='
 repo_root="$1"
