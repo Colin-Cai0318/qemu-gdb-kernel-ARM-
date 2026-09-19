@@ -86,8 +86,14 @@ KERNEL_LAB_DOWNLOAD_MODE=proxy ./setup.sh
 时，源码和构建产物仍会写入 VM 的大小写敏感虚拟磁盘，而不是 macOS 挂载目录。
 
 `./main.sh vscode` 应在 macOS 终端执行。它使用项目 `tools/` 内隔离的 VS Code
-配置和 Remote SSH 扩展，打开 VM 虚拟磁盘中的源码；在 VM Shell 内执行时会提示先
-`exit` 返回 macOS。
+配置和 Remote SSH 扩展，打开 VM 虚拟磁盘中的源码，并在 VM 端自动安装
+`ms-vscode.cpptools`。`cppdbg` 由这个微软 C/C++ 扩展提供；安装在 macOS 本地端的同名
+扩展不能代替 VM 远程端扩展。在 VM Shell 内执行时会提示先 `exit` 返回 macOS。
+
+如果 VS Code 仍显示 `Configured debug type 'cppdbg' is not supported`，先在 macOS
+终端重新执行 `./main.sh vscode`，然后在远程窗口执行
+`Developer: Reload Window`。扩展页面应显示 `C/C++` 已安装在
+`SSH: lima-kernel-lab`，而不是只安装在 macOS 本地。
 
 `JOBS`、`KERNEL_PROFILE`、`BUILD_IN_TREE_MODULES`、`GDB_PORT` 等原有环境变量会被
 传入 VM。例如：

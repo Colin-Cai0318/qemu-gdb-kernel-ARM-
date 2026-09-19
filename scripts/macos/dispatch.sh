@@ -90,10 +90,31 @@ exec "$repo_root/main.sh" vscode
         vscode_extensions="$TOOLS_DIR/vscode-extensions"
         vscode_settings="$vscode_data/User/settings.json"
         ssh_config="$LIMA_HOME_DIR/$INSTANCE_NAME/ssh.config"
-        run_code_without_proxy() {
+        run_code_direct() {
             env -u ALL_PROXY -u HTTPS_PROXY -u HTTP_PROXY \
                 -u all_proxy -u https_proxy -u http_proxy \
                 "$code_bin" --no-proxy-server "$@"
+        }
+        run_code_download() {
+            case "${KERNEL_LAB_DOWNLOAD_MODE:-auto}" in
+                direct)
+                    run_code_direct "$@"
+                    ;;
+                proxy)
+                    "$code_bin" "$@"
+                    ;;
+                auto)
+                    if run_code_direct "$@"; then
+                        return 0
+                    fi
+                    echo "VS Code 扩展直连下载失败，自动回退到系统代理..." >&2
+                    "$code_bin" "$@"
+                    ;;
+                *)
+                    echo "KERNEL_LAB_DOWNLOAD_MODE 仅支持 auto、direct 或 proxy" >&2
+                    return 2
+                    ;;
+            esac
         }
         mkdir -p "$(dirname -- "$vscode_settings")" "$vscode_extensions"
         printf '%s\n' \
@@ -106,7 +127,7 @@ exec "$repo_root/main.sh" vscode
             --extensions-dir "$vscode_extensions" --list-extensions 2>/dev/null |
             grep -qx 'ms-vscode-remote.remote-ssh'; then
             echo "安装项目私有 VS Code Remote SSH 扩展..."
-            run_code_without_proxy --user-data-dir "$vscode_data" \
+            run_code_download --user-data-dir "$vscode_data" \
                 --extensions-dir "$vscode_extensions" \
                 --install-extension ms-vscode-remote.remote-ssh
         fi
@@ -118,7 +139,9 @@ exec "$repo_root/main.sh" vscode
             /home/caizhipeng.guest/kernel-lab-data/kernel/sourceCode
 
         echo "检查 VM 中的 C/C++ 调试扩展..."
-        run_lima shell "$INSTANCE_NAME" -- bash -lc '
+        run_lima shell "$INSTANCE_NAME" -- \
+            env "KERNEL_LAB_DOWNLOAD_MODE=${KERNEL_LAB_DOWNLOAD_MODE:-auto}" \
+            bash -lc '
 server=""
 for _ in $(seq 1 120); do
     server=$(find "$HOME/.vscode-server/cli/servers" \
@@ -131,14 +154,46 @@ done
     exit 1
 }
 extensions_dir="$HOME/.vscode-server/extensions"
+install_cpptools() {
+    case "${KERNEL_LAB_DOWNLOAD_MODE:-auto}" in
+        direct)
+            env -u ALL_PROXY -u HTTPS_PROXY -u HTTP_PROXY \
+                -u all_proxy -u https_proxy -u http_proxy \
+                "$server" --extensions-dir "$extensions_dir" \
+                --install-extension ms-vscode.cpptools
+            ;;
+        proxy)
+            "$server" --extensions-dir "$extensions_dir" \
+                --install-extension ms-vscode.cpptools
+            ;;
+        auto)
+            if env -u ALL_PROXY -u HTTPS_PROXY -u HTTP_PROXY \
+                -u all_proxy -u https_proxy -u http_proxy \
+                "$server" --extensions-dir "$extensions_dir" \
+                --install-extension ms-vscode.cpptools; then
+                return 0
+            fi
+            echo "C/C++ 扩展直连下载失败，自动回退到系统代理..." >&2
+            "$server" --extensions-dir "$extensions_dir" \
+                --install-extension ms-vscode.cpptools
+            ;;
+        *)
+            echo "KERNEL_LAB_DOWNLOAD_MODE 仅支持 auto、direct 或 proxy" >&2
+            return 2
+            ;;
+    esac
+}
 if ! "$server" --extensions-dir "$extensions_dir" --list-extensions |
     grep -qx "ms-vscode.cpptools"; then
     echo "在 VM 中安装 C/C++ 调试扩展..."
-    env -u ALL_PROXY -u HTTPS_PROXY -u HTTP_PROXY \
-        -u all_proxy -u https_proxy -u http_proxy \
-        "$server" --extensions-dir "$extensions_dir" \
-        --install-extension ms-vscode.cpptools
+    install_cpptools
 fi
+"$server" --extensions-dir "$extensions_dir" --list-extensions |
+    grep -qx "ms-vscode.cpptools" || {
+        echo "VM 中的 ms-vscode.cpptools 安装验证失败" >&2
+        exit 1
+    }
+echo "VM C/C++ 调试扩展已就绪: ms-vscode.cpptools"
 '
         exit 0
         ;;
