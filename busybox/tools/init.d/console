@@ -5,7 +5,6 @@ cat <<'EOF'
 ARM64 kernel lab console
   exit / Ctrl-D : 关闭 Guest 并退出 QEMU
   poweroff       : 立即关闭 Guest
-  Ctrl-A X       : QEMU 紧急退出（先按 Ctrl-A，松开后按 X）
 
 EOF
 

@@ -78,7 +78,7 @@ macOS 宿主应使用 `./main.sh console`，因为 tmux 位于项目 Linux VM �
 ./main.sh setup [--full]         安装依赖，可选完成完整首次构建
 ./main.sh fetch [版本]           下载/恢复内核源码
 ./main.sh rootfs                 构建静态 BusyBox rootfs
-./main.sh build [--full]         构建 Image/vmlinux；--full 同时构建内核模块
+./main.sh build [--full]         构建内核；--full 会先清理并构建全部模块
 ./main.sh qemu                   不等待 GDB，直接启动
 ./main.sh debug                  终端 GDB 调试
 ./main.sh vscode                 准备 VS Code 配置并打开源码
@@ -99,13 +99,14 @@ KERNEL_LAB_DOWNLOAD_MODE=direct ./setup.sh --full
 
 默认 `debug` 档适合源码学习；`stability` 档额外启用 KASAN、lockdep、
 `DEBUG_ATOMIC_SLEEP` 等重型检查。默认只构建实验必需的 `Image` 和 `vmlinux`；
-`./main.sh build --full` 会再构建 `defconfig` 中全部已启用的内核模块。
-`BUILD_IN_TREE_MODULES=1` 环境变量仍兼容。第一课建议先使用默认精简构建。
+`./main.sh build --full` 会先执行 `make mrproper`，清除旧配置和编译产物，
+然后重新配置并构建 `Image`、`vmlinux` 和 `defconfig` 中全部已启用的内核模块。
+`BUILD_IN_TREE_MODULES=1` 环境变量仍兼容，并采用相同的先清理后全量编译流程。
+第一课建议先使用默认精简构建。
 
 QEMU Guest 控制台中输入 `exit`、按 `Ctrl-D` 或执行 `poweroff`，都会关闭
 Guest 并返回原终端。如果是通过 `./main.sh console` 连入 tmux，按
-`Ctrl-B`、松开后按 `D` 可只退出控制台而保持 QEMU 运行；`Ctrl-A`、松开后
-按 `X` 可紧急终止 QEMU。
+`Ctrl-B`、松开后按 `D` 可只退出控制台而保持 QEMU 运行。
 
 ## 分阶段实验
 

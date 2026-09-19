@@ -20,7 +20,7 @@ usage() {
     cat <<'EOF'
 用法:
   ./main.sh build           构建 Image 和 vmlinux
-  ./main.sh build --full    额外构建 defconfig 中全部已启用的内核模块
+  ./main.sh build --full    先彻底清理，再构建 Image、vmlinux 和全部已启用模块
 EOF
 }
 
@@ -77,7 +77,11 @@ fi
 echo "配置 ARM64 内核（profile=$PROFILE, mode=$build_mode, jobs=$JOBS）"
 make_args=(ARCH=arm64 CROSS_COMPILE="$CROSS_COMPILE")
 
-if [[ "${CLEAN_BUILD:-0}" == "1" ]]; then
+if [[ "$BUILD_IN_TREE_MODULES" == "1" ]]; then
+    echo "全量编译前清理旧产物: make mrproper"
+    "$MAKE_BIN" -C "$KERNEL_DIR" "${make_args[@]}" mrproper
+elif [[ "${CLEAN_BUILD:-0}" == "1" ]]; then
+    echo "按 CLEAN_BUILD=1 清理旧产物: make mrproper"
     "$MAKE_BIN" -C "$KERNEL_DIR" "${make_args[@]}" mrproper
 fi
 
