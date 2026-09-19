@@ -16,10 +16,36 @@ MAKE_BIN="${MAKE_BIN:-$(kernel_lab_make_command)}"
 LOGFILE="${LOGFILE:-$SCRIPT_DIR/build.log}"
 DEVICE_SPEC="$SCRIPT_DIR/initramfs.devices"
 
+usage() {
+    cat <<'EOF'
+用法:
+  ./main.sh build           构建 Image 和 vmlinux
+  ./main.sh build --full    额外构建 defconfig 中全部已启用的内核模块
+EOF
+}
+
 die() {
     echo "错误: $*" >&2
     exit 1
 }
+
+while (($# > 0)); do
+    case "$1" in
+        --full)
+            BUILD_IN_TREE_MODULES=1
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "未知编译参数: $1" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+    shift
+done
 
 for command_name in "$MAKE_BIN" "${CROSS_COMPILE}gcc" tee; do
     command -v "$command_name" >/dev/null 2>&1 ||
@@ -43,7 +69,12 @@ case "$PROFILE" in
 esac
 
 start_time=$SECONDS
-echo "配置 ARM64 内核（profile=$PROFILE, jobs=$JOBS）"
+if [[ "$BUILD_IN_TREE_MODULES" == "1" ]]; then
+    build_mode="full"
+else
+    build_mode="core"
+fi
+echo "配置 ARM64 内核（profile=$PROFILE, mode=$build_mode, jobs=$JOBS）"
 make_args=(ARCH=arm64 CROSS_COMPILE="$CROSS_COMPILE")
 
 if [[ "${CLEAN_BUILD:-0}" == "1" ]]; then

@@ -64,6 +64,9 @@ fi
 if ((WAIT_GDB == 1)); then
     qemu_args+=(-S)
     echo "QEMU 将在第一条指令前等待 GDB（端口 $GDB_PORT）"
+else
+    echo "Guest 中输入 exit 或按 Ctrl-D 可关机并退出 QEMU"
+    echo "紧急退出: 先按 Ctrl-A，松开后按 X"
 fi
 
 exec qemu-system-aarch64 "${qemu_args[@]}"

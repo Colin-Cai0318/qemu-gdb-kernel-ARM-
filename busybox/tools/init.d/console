@@ -1,0 +1,21 @@
+#!/bin/sh
+
+cat <<'EOF'
+
+ARM64 kernel lab console
+  exit / Ctrl-D : 关闭 Guest 并退出 QEMU
+  poweroff       : 立即关闭 Guest
+  Ctrl-A X       : QEMU 紧急退出（先按 Ctrl-A，松开后按 X）
+
+EOF
+
+/bin/sh
+shell_status=$?
+
+echo
+echo "Guest Shell 已退出，正在关闭 QEMU..."
+/bin/sync
+/sbin/poweroff -f
+
+echo "自动关机失败（Shell 状态: $shell_status），已返回控制台。" >&2
+exec /bin/sh

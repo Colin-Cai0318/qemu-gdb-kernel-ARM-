@@ -55,8 +55,12 @@ BusyBox 1.33.1 的 `tc` applet 依赖已从新 Linux UAPI 头文件移除的 CBQ
 默认目标是 `Image + vmlinux`。只有在研究某个内核自带模块时才需要：
 
 ```bash
-BUILD_IN_TREE_MODULES=1 ./main.sh build
+./main.sh build --full
 ```
+
+这与 `./setup.sh --full` 不同：`setup --full` 表示完成首次部署全流程，
+`build --full` 才表示构建内核中全部已启用的模块。原有
+`BUILD_IN_TREE_MODULES=1 ./main.sh build` 仍然兼容。
 
 精简构建会将 `vmlinux.symvers` 复制为外部模块构建所需的 `Module.symvers`；
 这份符号表包含核心内核的导出符号，不需要为了 A01 编译所有无关的内核模块。
@@ -83,5 +87,9 @@ tmux ls
 ```bash
 tmux kill-session -t qemu-session
 ```
+
+Guest 内输入 `exit` 或按 `Ctrl-D` 会执行关机并退出 QEMU。在 tmux 控制台中，
+`Ctrl-B` 后按 `D` 只分离控制台；QEMU 仍在后台运行。`Ctrl-A` 后按 `X`
+是 QEMU 的紧急退出键。
 
 该命令只针对明确命名的实验会话，不会根据端口执行 `kill -9`。

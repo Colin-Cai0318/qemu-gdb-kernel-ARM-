@@ -78,7 +78,7 @@ macOS 宿主应使用 `./main.sh console`，因为 tmux 位于项目 Linux VM �
 ./main.sh setup [--full]         安装依赖，可选完成完整首次构建
 ./main.sh fetch [版本]           下载/恢复内核源码
 ./main.sh rootfs                 构建静态 BusyBox rootfs
-./main.sh build                  构建 ARM64 Image 和 vmlinux
+./main.sh build [--full]         构建 Image/vmlinux；--full 同时构建内核模块
 ./main.sh qemu                   不等待 GDB，直接启动
 ./main.sh debug                  终端 GDB 调试
 ./main.sh vscode                 准备 VS Code 配置并打开源码
@@ -92,15 +92,20 @@ macOS 宿主应使用 `./main.sh console`，因为 tmux 位于项目 Linux VM �
 ```bash
 JOBS=8 ./main.sh build
 KERNEL_PROFILE=stability ./main.sh build
-BUILD_IN_TREE_MODULES=1 ./main.sh build
+./main.sh build --full
 GDB_PORT=1235 ./main.sh debug
 KERNEL_LAB_DOWNLOAD_MODE=direct ./setup.sh --full
 ```
 
 默认 `debug` 档适合源码学习；`stability` 档额外启用 KASAN、lockdep、
 `DEBUG_ATOMIC_SLEEP` 等重型检查。默认只构建实验必需的 `Image` 和 `vmlinux`；
-设置 `BUILD_IN_TREE_MODULES=1` 才会构建 `defconfig` 中的全部模块。第一课建议先用
-`debug` 默认值。
+`./main.sh build --full` 会再构建 `defconfig` 中全部已启用的内核模块。
+`BUILD_IN_TREE_MODULES=1` 环境变量仍兼容。第一课建议先使用默认精简构建。
+
+QEMU Guest 控制台中输入 `exit`、按 `Ctrl-D` 或执行 `poweroff`，都会关闭
+Guest 并返回原终端。如果是通过 `./main.sh console` 连入 tmux，按
+`Ctrl-B`、松开后按 `D` 可只退出控制台而保持 QEMU 运行；`Ctrl-A`、松开后
+按 `X` 可紧急终止 QEMU。
 
 ## 分阶段实验
 

@@ -64,6 +64,8 @@ exec bash --noprofile --norc -i
         ;;
     console)
         run_lima start -y "$INSTANCE_NAME" >/dev/null
+        echo "退出控制台但保持 QEMU 运行: 先按 Ctrl-B，松开后按 D"
+        echo "关闭 QEMU: 在 Guest 中输入 exit 或 poweroff"
         exec env HOME="$LOCAL_HOME" TMPDIR="$LOCAL_TMP" \
             LIMA_HOME="$LIMA_HOME_DIR" \
             "$LIMACTL" shell "$INSTANCE_NAME" -- tmux attach -t "${QEMU_SESSION:-qemu-session}"

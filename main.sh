@@ -11,7 +11,7 @@ usage() {
   ./main.sh setup [--full]         一键安装依赖（--full 同时完成首次构建）
   ./main.sh fetch [版本]           下载/展开内核源码（默认 6.12）
   ./main.sh rootfs                 构建静态 BusyBox initramfs
-  ./main.sh build                  构建 ARM64 Image 与 vmlinux
+  ./main.sh build [--full]         构建 Image/vmlinux；--full 同时构建内核模块
   ./main.sh qemu                   直接启动 QEMU
   ./main.sh debug                  启动等待 GDB 的 QEMU 并进入 GDB
   ./main.sh vscode                 准备 VS Code 配置并打开源码
@@ -106,9 +106,10 @@ cat <<'EOF'
 1. 一键安装依赖
 2. 准备 Linux 6.12 源码
 3. 构建 BusyBox rootfs
-4. 编译内核
+4. 编译内核（Image + vmlinux）
 5. 启动终端 GDB 调试
 6. 启动 VS Code 调试
+7. 全量编译内核（含全部已启用模块）
 ======================================
 EOF
 read -r -p "请选择: " operation
@@ -121,5 +122,6 @@ case "$operation" in
     4) run_action build ;;
     5) run_action debug ;;
     6) run_action vscode ;;
+    7) run_action build --full ;;
     *) echo "无效输入" >&2; exit 2 ;;
 esac

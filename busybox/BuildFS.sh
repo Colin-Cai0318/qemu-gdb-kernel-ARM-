@@ -104,7 +104,9 @@ mkdir -p \
     "$STAGING_DIR/mnt/customized" \
     "$STAGING_DIR/mnt/labs"
 cp -a "$SCRIPT_DIR/tools/." "$STAGING_DIR/etc/"
-chmod 0755 "$STAGING_DIR/etc/init.d/rcS"
+chmod 0755 \
+    "$STAGING_DIR/etc/init.d/rcS" \
+    "$STAGING_DIR/etc/init.d/console"
 
 if [[ -e "$ROOTFS_DIR" ]]; then
     backup_dir="$ROOTFS_DIR.backup.$(date +%Y%m%d-%H%M%S)"

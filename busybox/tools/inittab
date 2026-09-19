@@ -1,4 +1,3 @@
 ::sysinit:/etc/init.d/rcS
-::respawn:-/bin/sh
-::askfirst:-/bin/sh
+::askfirst:-/etc/init.d/console
 ::ctrlaltdel:/bin/umount -a -r
