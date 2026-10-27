@@ -4,6 +4,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 source "$REPO_ROOT/scripts/lib/host.sh"
+source "$REPO_ROOT/scripts/gdb/setup.sh"
 KERNEL_DIR="${KERNEL_DIR:-$REPO_ROOT/kernel/sourceCode}"
 GDB_PORT="${GDB_PORT:-1234}"
 VMLINUX="$KERNEL_DIR/vmlinux"
@@ -13,17 +14,14 @@ VMLINUX="$KERNEL_DIR/vmlinux"
     exit 1
 }
 
-"$SCRIPT_DIR/vsStartQemu.sh"
+gdb_setup="$(mktemp)"
+trap 'rm -f -- "$gdb_setup"' EXIT
+kernel_lab_gdb_setup "$KERNEL_DIR" "$REPO_ROOT" "$gdb_setup"
 
 gdb_args=(
     "$VMLINUX"
-    -ex "set architecture aarch64"
-    -ex "set pagination off"
+    -x "$gdb_setup"
 )
-
-if [[ -f "$KERNEL_DIR/scripts/gdb/vmlinux-gdb.py" ]]; then
-    gdb_args+=(-ex "source $KERNEL_DIR/scripts/gdb/vmlinux-gdb.py")
-fi
 
 gdb_args+=(
     -ex "target remote localhost:$GDB_PORT"
@@ -35,4 +33,6 @@ gdb_bin="$(kernel_lab_gdb_command)" || {
     exit 1
 }
 
-exec "$gdb_bin" "${gdb_args[@]}"
+"$SCRIPT_DIR/vsStartQemu.sh"
+cd "$KERNEL_DIR"
+"$gdb_bin" "${gdb_args[@]}"

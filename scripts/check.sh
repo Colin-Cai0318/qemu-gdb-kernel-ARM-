@@ -18,5 +18,13 @@ done < <(
 
 python3 -m json.tool "$REPO_ROOT/qemu/launch.json" >/dev/null
 python3 -m json.tool "$REPO_ROOT/qemu/tasks.json" >/dev/null
+python3 - "$REPO_ROOT" <<'PY'
+import ast
+import pathlib
+import sys
+root = pathlib.Path(sys.argv[1])
+for path in (root / 'scripts').rglob('*.py'):
+    ast.parse(path.read_text(), filename=str(path))
+PY
 
-echo "静态检查通过: $shell_count 个 shell 脚本，2 个 JSON 文件"
+echo "静态检查通过: $shell_count 个 shell 脚本，2 个 JSON 文件，Python 语法"

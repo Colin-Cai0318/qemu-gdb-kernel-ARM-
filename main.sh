@@ -12,6 +12,7 @@ usage() {
   ./main.sh fetch [版本]           下载/展开内核源码（默认 6.12）
   ./main.sh rootfs                 构建静态 BusyBox initramfs
   ./main.sh build [--full]         构建内核；--full 会先清理并构建全部模块
+  ./main.sh modules                构建 customized/main.ko（调试符号保留）
   ./main.sh qemu                   直接启动 QEMU
   ./main.sh debug                  启动等待 GDB 的 QEMU 并进入 GDB
   ./main.sh vscode                 准备 VS Code 配置并打开源码
@@ -46,6 +47,10 @@ run_action() {
         fetch) "$SCRIPT_DIR/kernel/fetch.sh" "$@" ;;
         rootfs) "$SCRIPT_DIR/busybox/BuildFS.sh" "$@" ;;
         build) "$SCRIPT_DIR/kernel/build.sh" "$@" ;;
+        modules)
+            make_bin="$(kernel_lab_make_command)"
+            "$make_bin" -C "$SCRIPT_DIR/customized" "$@"
+            ;;
         qemu) "$SCRIPT_DIR/qemu/runQemu.sh" "$@" ;;
         debug) "$SCRIPT_DIR/qemu/consoleStartQemu.sh" "$@" ;;
         vscode)
@@ -67,6 +72,34 @@ run_action() {
                 "$kernel_dir/.vscode/"
             printf '%s\n' "$SCRIPT_DIR" > \
                 "$kernel_dir/.vscode/kernel-lab-repo-root"
+            source "$SCRIPT_DIR/scripts/gdb/setup.sh"
+            kernel_lab_gdb_setup "$kernel_dir" "$SCRIPT_DIR" \
+                "$kernel_dir/.vscode/kernel-lab.gdb"
+            python3 - "$kernel_dir/.vscode/launch.json" "${GDB_PORT:-1234}" "$SCRIPT_DIR" <<'PY'
+import json
+import pathlib
+import sys
+path = pathlib.Path(sys.argv[1])
+config = json.loads(path.read_text())
+config['configurations'][0]['miDebuggerServerAddress'] = 'localhost:' + sys.argv[2]
+roots = (path.parent.parent.resolve(), pathlib.Path(sys.argv[3]).resolve())
+config['configurations'][0]['sourceFileMap'] = {
+    str(root): {'editorPath': str(root), 'useForBreakpoints': True} for root in roots
+}
+path.write_text(json.dumps(config, indent=2) + '\n')
+PY
+            python3 - "$kernel_dir" "$SCRIPT_DIR" <<'PY'
+import json
+import pathlib
+import sys
+kernel, repo = map(pathlib.Path, sys.argv[1:])
+folders = [{'name': 'Linux', 'path': str(kernel.resolve())}]
+folders += [{'name': name, 'path': str(repo / name)} for name in ('customized', 'labs')]
+(kernel / 'kernel-lab.code-workspace').write_text(json.dumps({'folders': folders}, indent=2) + '\n')
+PY
+            printf 'export GDB_PORT=%q\nexport QEMU_SESSION=%q\n' \
+                "${GDB_PORT:-1234}" "${QEMU_SESSION:-qemu-session}" > \
+                "$kernel_dir/.vscode/kernel-lab-qemu.env"
             if [[ "${VSCODE_PREPARE_ONLY:-0}" == "1" ]]; then
                 echo "VS Code 配置已准备: $workspace_dir"
                 return
@@ -79,7 +112,7 @@ run_action() {
                 echo "未找到 code 命令" >&2
                 exit 1
             }
-            code "$workspace_dir"
+            code "$workspace_dir/kernel-lab.code-workspace"
             ;;
         shell|console|stop)
             echo "$action 仅用于 macOS 宿主" >&2
@@ -110,6 +143,7 @@ cat <<'EOF'
 5. 启动终端 GDB 调试
 6. 启动 VS Code 调试
 7. 全量编译内核（先清理，含全部已启用模块）
+8. 编译自定义模块（customized/main.ko）
 ======================================
 EOF
 read -r -p "请选择: " operation
@@ -123,5 +157,6 @@ case "$operation" in
     5) run_action debug ;;
     6) run_action vscode ;;
     7) run_action build --full ;;
+    8) run_action modules ;;
     *) echo "无效输入" >&2; exit 2 ;;
 esac
