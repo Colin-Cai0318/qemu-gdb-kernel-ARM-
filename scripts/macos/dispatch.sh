@@ -134,11 +134,13 @@ exec "$repo_root/main.sh" vscode
                 --install-extension ms-vscode-remote.remote-ssh
         fi
 
-        echo "通过 Remote SSH 打开 VM 内核源码..."
+        remote_workspace="$(run_lima shell "$INSTANCE_NAME" -- bash -lc \
+            'printf "%s/kernel-lab-data/kernel/sourceCode/kernel-lab.code-workspace" "$HOME"')"
+        echo "通过 Remote SSH 打开内核、customized 和 labs 工作区..."
         "$code_bin" --user-data-dir "$vscode_data" \
             --extensions-dir "$vscode_extensions" --new-window \
             --remote ssh-remote+lima-kernel-lab \
-            /home/caizhipeng.guest/kernel-lab-data/kernel/sourceCode
+            "$remote_workspace"
 
         echo "检查 VM 中的 C/C++ 调试扩展..."
         run_lima shell "$INSTANCE_NAME" -- \

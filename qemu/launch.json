@@ -8,23 +8,20 @@
       "program": "${workspaceFolder}/vmlinux",
       "cwd": "${workspaceFolder}",
       "MIMode": "gdb",
+      "targetArchitecture": "arm64",
+      "stopAtConnect": true,
       "miDebuggerPath": "__KERNEL_GDB__",
       "miDebuggerServerAddress": "localhost:1234",
       "preLaunchTask": "Start QEMU",
       "setupCommands": [
         {
-          "description": "选择 ARM64 架构",
-          "text": "set architecture aarch64",
+          "description": "辅助脚本读取类型前先加载 vmlinux",
+          "text": "file \"${workspaceFolder}/vmlinux\"",
           "ignoreFailures": false
         },
         {
-          "description": "加载 Linux 内核 GDB 辅助命令",
-          "text": "source ${workspaceFolder}/scripts/gdb/vmlinux-gdb.py",
-          "ignoreFailures": true
-        },
-        {
-          "description": "在 start_kernel 停止",
-          "text": "break start_kernel",
+          "description": "加载内核和外部模块调试支持",
+          "text": "source ${workspaceFolder}/.vscode/kernel-lab.gdb",
           "ignoreFailures": false
         }
       ]

@@ -79,6 +79,7 @@ macOS 宿主应使用 `./main.sh console`，因为 tmux 位于项目 Linux VM �
 ./main.sh fetch [版本]           下载/恢复内核源码
 ./main.sh rootfs                 构建静态 BusyBox rootfs
 ./main.sh build [--full]         构建内核；--full 会先清理并构建全部模块
+./main.sh modules                构建 customized/main.ko
 ./main.sh qemu                   不等待 GDB，直接启动
 ./main.sh debug                  终端 GDB 调试
 ./main.sh vscode                 准备 VS Code 配置并打开源码
@@ -107,6 +108,13 @@ KERNEL_LAB_DOWNLOAD_MODE=direct ./setup.sh --full
 QEMU Guest 控制台中输入 `exit`、按 `Ctrl-D` 或执行 `poweroff`，都会关闭
 Guest 并返回原终端。如果是通过 `./main.sh console` 连入 tmux，按
 `Ctrl-B`、松开后按 `D` 可只退出控制台而保持 QEMU 运行。
+
+## 自定义模块断点
+
+`./main.sh modules` 构建 `customized/main.ko`；终端 GDB 和 VS Code 均自动加载
+模块运行地址，支持初始化、普通函数和卸载断点及模块重载。旧的精简调试信息配置需要
+先运行一次 `./main.sh build`。完整操作与验证见
+[`docs/module-debugging.md`](docs/module-debugging.md)。
 
 ## 分阶段实验
 

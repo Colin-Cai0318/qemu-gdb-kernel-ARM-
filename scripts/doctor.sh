@@ -46,7 +46,7 @@ echo "ARM64 Linux 内核实验环境检查"
 echo "仓库: $REPO_ROOT"
 echo
 
-for command_name in git "$MAKE_BIN" tar xz "${CROSS_COMPILE}gcc" qemu-system-aarch64 tmux; do
+for command_name in git "$MAKE_BIN" tar xz "${CROSS_COMPILE}gcc" "${CROSS_COMPILE}objcopy" qemu-system-aarch64 tmux; do
     check_command "$command_name"
 done
 if gdb_bin="$(kernel_lab_gdb_command 2>/dev/null)"; then
@@ -75,6 +75,13 @@ fi
 
 if [[ -f "$KERNEL_DIR/arch/arm64/boot/Image" && -f "$KERNEL_DIR/vmlinux" ]]; then
     ok "Image 与 vmlinux 已生成"
+    if grep -qx 'CONFIG_DEBUG_INFO_REDUCED=y' "$KERNEL_DIR/.config"; then
+        fail "CONFIG_DEBUG_INFO_REDUCED=y 阻止 Linux GDB 辅助脚本；运行 ./main.sh build"
+    elif [[ ! -f "$KERNEL_DIR/vmlinux-gdb.py" ]]; then
+        fail "缺少 vmlinux-gdb.py；启用 CONFIG_GDB_SCRIPTS 并重新构建"
+    else
+        ok "完整调试类型和内核 GDB 辅助脚本已准备"
+    fi
 else
     warn "尚未生成 Image/vmlinux；运行 ./main.sh build"
 fi
